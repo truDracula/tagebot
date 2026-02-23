@@ -3,154 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>$TAGE | Elite Mini App</title>
+    <title>$TAGE</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { background-color: #000; color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; user-select: none; }
-        .glass { background: rgba(15, 15, 15, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .nav-active { color: #2563eb !important; border-top: 2px solid #2563eb; }
+        body { background-color: #000; color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .glass { background: rgba(15, 15, 15, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .nav-active { color: #2563eb !important; border-bottom: 2px solid #2563eb; }
         .hidden { display: none !important; }
     </style>
 </head>
 <body class="p-6">
     <div id="startup" class="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-10 text-center">
-        <h1 class="text-5xl font-black italic mb-4 tracking-tighter italic">$TAGE</h1>
-        <div id="scanner-ui">
-            <p id="status" class="text-blue-500 font-bold uppercase text-[10px] tracking-[0.3em]">Analyzing Metadata...</p>
-            <div class="w-64 bg-zinc-900 h-1.5 mt-6 overflow-hidden rounded-full mx-auto">
-                <div id="progress-bar" class="bg-blue-600 h-full w-0 transition-all duration-300"></div>
-            </div>
-            <div id="result" class="mt-8 hidden">
-                <h2 id="total-reward" class="text-6xl font-black italic mb-6">0</h2>
-                <button onclick="enterApp()" class="w-full bg-white text-black py-4 rounded-2xl font-black italic uppercase">Claim & Enter</button>
-            </div>
+        <h1 class="text-5xl font-black italic mb-4">$TAGE</h1>
+        <div class="w-64 bg-zinc-900 h-1.5 mt-6 overflow-hidden rounded-full mx-auto">
+            <div id="progress-bar" class="bg-blue-600 h-full w-0 transition-all duration-300"></div>
+        </div>
+        <div id="result" class="mt-8 hidden">
+            <h2 id="total-reward" class="text-6xl font-black italic mb-6">41,850</h2>
+            <button onclick="enterApp()" class="w-full bg-white text-black py-4 rounded-2xl font-black italic uppercase">Claim & Enter</button>
         </div>
     </div>
 
     <div id="app" class="hidden pb-32">
-        <div class="flex justify-between items-center mb-8 sticky top-0 bg-black/90 py-4 z-40 backdrop-blur-md">
+        <div class="flex justify-between items-center mb-8">
             <div>
-                <p id="user-name" class="font-black italic text-lg">@Guest</p>
-                <p id="uid-display" class="text-[10px] text-gray-600 font-bold uppercase tracking-widest">UID: 000000</p>
+                <p id="user-name" class="font-black italic text-lg">@Loading...</p>
+                <p id="uid-display" class="text-[10px] text-gray-600 font-bold uppercase">UID: 000000</p>
             </div>
-            <div class="glass px-5 py-2 rounded-2xl border-blue-500/20">
-                <span id="balance" class="text-blue-500 font-black text-xl">0</span>
-            </div>
+            <div class="glass px-5 py-2 rounded-2xl"><span id="balance" class="text-blue-500 font-black text-xl">0</span></div>
         </div>
 
         <div id="view-home" class="view-section">
-            <div class="glass p-6 rounded-[2.5rem] border border-blue-500/20 mb-8 text-center">
-                <h3 class="font-black italic text-lg uppercase mb-4">Daily Check-in</h3>
-                <button onclick="watchAd()" class="w-full bg-blue-600 py-4 rounded-2xl font-black italic">WATCH VIDEO +1,000</button>
+            <div class="glass p-8 rounded-[2.5rem] text-center mb-6">
+                <h3 class="font-black italic mb-4 uppercase">Daily Bonus</h3>
+                <button onclick="alert('Video Ad Loading...')" class="w-full bg-blue-600 py-4 rounded-2xl font-black italic">WATCH & EARN +1,000</button>
             </div>
         </div>
 
         <div id="view-tasks" class="view-section hidden">
-            <div class="flex gap-2 mb-6 bg-zinc-900/50 p-1 rounded-2xl">
-                <button onclick="switchTaskTab('today')" id="tab-today" class="task-tab-btn flex-1 py-3 text-[10px] font-black rounded-xl bg-blue-600 uppercase">Today</button>
-                <button onclick="switchTaskTab('partner')" id="tab-partner" class="task-tab-btn flex-1 py-3 text-[10px] font-black rounded-xl uppercase">Partners</button>
+            <div class="flex gap-2 mb-6 bg-zinc-900 p-1 rounded-2xl">
+                <button onclick="renderTasks('today')" id="btn-today" class="flex-1 py-3 text-[10px] font-black rounded-xl bg-blue-600">TODAY</button>
+                <button onclick="renderTasks('partner')" id="btn-partner" class="flex-1 py-3 text-[10px] font-black rounded-xl">PARTNERS</button>
             </div>
             <div id="task-list" class="space-y-3"></div>
         </div>
 
-        <div id="view-leaderboard" class="view-section hidden">
-            <h3 class="font-black italic text-xl uppercase mb-6 text-blue-500 text-center">Rankings</h3>
-            <div id="lb-list" class="space-y-3"></div>
-        </div>
-
-        <div class="fixed bottom-0 left-0 w-full bg-black border-t border-white/10 flex justify-around p-4 pb-8 z-50 backdrop-blur-xl">
-            <button onclick="showView('home')" id="nav-home" class="flex flex-col items-center gap-1 text-gray-600 font-black text-[10px] uppercase nav-active pt-2">Home</button>
-            <button onclick="showView('tasks')" id="nav-tasks" class="flex flex-col items-center gap-1 text-gray-600 font-black text-[10px] uppercase pt-2">Tasks</button>
-            <button onclick="showView('leaderboard')" id="nav-leaderboard" class="flex flex-col items-center gap-1 text-gray-600 font-black text-[10px] uppercase pt-2">Rank</button>
+        <div class="fixed bottom-0 left-0 w-full bg-black border-t border-white/10 flex justify-around p-4 pb-8 z-50">
+            <button onclick="showView('home')" id="nav-home" class="nav-active text-[10px] font-black uppercase">Home</button>
+            <button onclick="showView('tasks')" id="nav-tasks" class="text-gray-500 text-[10px] font-black uppercase">Tasks</button>
         </div>
     </div>
 
     <script>
-    const tg = window.Telegram.WebApp;
-    const API = "https://tagebot-production.up.railway.app";
-    let user = { points: 0, account_age_days: 0, telegram_id: "000000", username: "Guest" };
+        const tg = window.Telegram.WebApp;
+        let user = { username: "Guest", id: "000000", balance: 0 };
+        const taskData = [
+            { title: "Join $TAGE TG", reward: 5000, type: "today" },
+            { title: "Follow $TAGE X", reward: 3000, type: "today" },
+            { title: "Partner Channel", reward: 2500, type: "partner" }
+        ];
 
-    // This ensures tasks actually exist in the frontend memory
-    const tasks = [
-        { title: "Join $TAGE TG", reward: 5000, type: "today", done: false },
-        { title: "Follow $TAGE X", reward: 3000, type: "today", done: false },
-        { title: "Visit Partner", reward: 2000, type: "partner", done: false }
-    ];
-
-    async function init() {
-        // 1. IMMEDIATELY grab Telegram data
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            user.username = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name || "Member";
-            user.telegram_id = tg.initDataUnsafe.user.id;
+        function showView(name) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
+            document.getElementById('view-' + name).classList.remove('hidden');
+            document.querySelectorAll('button[id^="nav-"]').forEach(n => n.classList.remove('nav-active'));
+            document.getElementById('nav-' + name).classList.add('nav-active');
+            if(name === 'tasks') renderTasks('today');
         }
 
-        // 2. Start the Progress Bar Animation
-        let p = 0;
-        let interval = setInterval(() => {
-            p++;
-            document.getElementById('progress-bar').style.width = p + "%";
-            if(p === 100) {
-                clearInterval(interval);
-                document.getElementById('status').innerText = "VERIFIED";
-                document.getElementById('result').classList.remove('hidden');
-                // Calculate age reward based on ID or fallback
-                const reward = (user.telegram_id < 500000000) ? 50000 : 25000;
-                document.getElementById('total-reward').innerText = reward.toLocaleString();
-            }
-        }, 20);
-
-        // 3. Sync with Backend in background
-        try {
-            const res = await fetch(`${API}/auth`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user.telegram_id, username: user.username })
-            });
-            const data = await res.json();
-            user.points = data.points;
-        } catch(e) { console.log("Offline mode active"); }
-    }
-
-    function enterApp() {
-        document.getElementById('startup').classList.add('hidden');
-        document.getElementById('app').classList.remove('hidden');
-        
-        // UPDATE HUD WITH REAL DATA
-        document.getElementById('user-name').innerText = "@" + user.username;
-        document.getElementById('uid-display').innerText = "UID: " + user.telegram_id;
-        document.getElementById('balance').innerText = user.points.toLocaleString();
-        
-        // LOAD INITIAL TASKS
-        showView('home'); 
-    }
-
-    function showView(name) {
-        document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
-        document.getElementById('view-' + name).classList.remove('hidden');
-        
-        document.querySelectorAll('[id^="nav-"]').forEach(n => n.classList.remove('nav-active'));
-        document.getElementById('nav-' + name).classList.add('nav-active');
-
-        if(name === 'tasks') renderTasks('today');
-    }
-
-    function renderTasks(category) {
-        const list = document.getElementById('task-list');
-        const filtered = tasks.filter(t => t.type === category);
-        list.innerHTML = filtered.map(t => `
-            <div class="glass p-4 rounded-2xl flex justify-between items-center">
-                <div>
-                    <p class="text-xs font-bold uppercase italic">${t.title}</p>
-                    <p class="text-blue-500 font-black text-[10px]">+${t.reward.toLocaleString()}</p>
+        function renderTasks(type) {
+            document.getElementById('btn-today').classList.toggle('bg-blue-600', type === 'today');
+            document.getElementById('btn-partner').classList.toggle('bg-blue-600', type === 'partner');
+            
+            const list = document.getElementById('task-list');
+            const filtered = taskData.filter(t => t.type === type);
+            list.innerHTML = filtered.map(t => `
+                <div class="glass p-4 rounded-2xl flex justify-between items-center">
+                    <div><p class="text-xs font-bold uppercase">${t.title}</p><p class="text-blue-500 font-black text-[10px]">+${t.reward}</p></div>
+                    <button class="bg-blue-600 text-[9px] px-4 py-1 rounded-lg font-black">GO</button>
                 </div>
-                <button class="bg-blue-600 text-[9px] px-4 py-1 rounded-lg font-black uppercase">Go</button>
-            </div>
-        `).join('');
-    }
+            `).join('');
+        }
 
-    init();
-</script>
+        function init() {
+            // Force grab data
+            tg.ready();
+            tg.expand();
+            
+            const checkData = setInterval(() => {
+                if (tg.initDataUnsafe.user) {
+                    user.username = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name;
+                    user.id = tg.initDataUnsafe.user.id;
+                    clearInterval(checkData);
+                }
+            }, 100);
+
+            let p = 0;
+            let int = setInterval(() => {
+                p++;
+                document.getElementById('progress-bar').style.width = p + "%";
+                if(p === 100) {
+                    clearInterval(int);
+                    document.getElementById('result').classList.remove('hidden');
+                }
+            }, 20);
+        }
+
+        function enterApp() {
+            document.getElementById('startup').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            document.getElementById('user-name').innerText = "@" + user.username;
+            document.getElementById('uid-display').innerText = "UID: " + user.id;
+        }
+
+        init();
+    </script>
 </body>
 </html>
