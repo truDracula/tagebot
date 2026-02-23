@@ -10,15 +10,15 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         body { background-color: #000; color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; user-select: none; }
         .glass { background: rgba(15, 15, 15, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .animate-scan { animation: scan 2s linear infinite; }
-        @keyframes scan { 0% { width: 0%; } 100% { width: 100%; } }
+        .nav-active { color: #2563eb !important; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body class="p-6">
     <div id="startup" class="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-10">
         <div id="welcome" class="w-full max-w-xs text-center">
             <h1 class="text-5xl font-black italic mb-4 tracking-tighter">$TAGE</h1>
-            <p class="text-blue-500 font-bold uppercase text-[10px] tracking-[0.3em]">Preparing Scanner...</p>
+            <p class="text-blue-500 font-bold uppercase text-[10px] tracking-[0.3em] animate-pulse">Initializing Scanner...</p>
         </div>
         <div id="scanner" class="w-full max-w-xs text-center hidden">
             <h1 class="text-5xl font-black italic mb-4 tracking-tighter">$TAGE</h1>
@@ -26,11 +26,9 @@
             <div class="w-full bg-zinc-900 h-2 mt-6 overflow-hidden rounded-full">
                 <div id="progress-bar" class="bg-blue-600 h-full w-0 transition-all"></div>
             </div>
-            <p id="progress-text" class="mt-3 text-xs font-black text-blue-500">0%</p>
             <div id="result" class="mt-8 hidden">
-                <p id="age-days" class="text-blue-500 font-black italic text-xs mb-2 tracking-widest uppercase"></p>
                 <h2 id="total-reward" class="text-6xl font-black italic mb-6 tracking-tighter">0</h2>
-                <button onclick="enterApp()" class="w-full bg-white text-black py-4 rounded-2xl font-black italic active:scale-95 transition-all">ENTER APP</button>
+                <button onclick="enterApp()" class="w-full bg-white text-black py-4 rounded-2xl font-black italic active:scale-95 transition-all uppercase">Claim Drop</button>
             </div>
         </div>
     </div>
@@ -39,322 +37,180 @@
         <div class="flex justify-between items-center mb-8 sticky top-0 bg-black/80 py-4 z-40 backdrop-blur-md">
             <div>
                 <p id="user-name" class="font-black italic text-lg">@Guest</p>
-                <p id="uid-display" class="text-[10px] text-gray-600 font-bold">UID: 000000</p>
+                <p id="uid-display" class="text-[10px] text-gray-600 font-bold tracking-widest uppercase">UID: 000000</p>
             </div>
             <div class="glass px-5 py-2 rounded-2xl border-blue-500/20">
                 <span id="balance" class="text-blue-500 font-black text-xl">0</span>
             </div>
         </div>
 
-        <div id="age-box" class="glass p-8 rounded-[2.5rem] text-center mb-8 border-l-4 border-blue-600 hidden">
-            <p class="text-gray-500 text-[10px] uppercase font-bold mb-1">Account Age Reward</p>
-            <h2 id="age-bonus-text" class="text-5xl font-black italic text-white">0</h2>
-            <button onclick="claimAgeReward()" class="mt-6 w-full bg-white text-black py-4 rounded-2xl font-black italic active:scale-95 transition-all">CLAIM REWARD</button>
-        </div>
-
-        <div class="glass p-6 rounded-[2.5rem] border border-blue-500/20 mb-8">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h3 class="font-black italic text-lg uppercase">Daily Video</h3>
-                    <p class="text-[10px] text-blue-400 font-bold">+1,000 $TAGE EACH</p>
-                </div>
-                <div class="text-right">
-                    <p id="ads-left" class="text-2xl font-black italic text-blue-500">10</p>
-                    <p class="text-[8px] text-gray-500 font-bold">LEFT</p>
-                </div>
+        <div id="view-home" class="view-section">
+            <div id="age-box" class="glass p-8 rounded-[2.5rem] text-center mb-8 border-l-4 border-blue-600 hidden">
+                <p class="text-gray-500 text-[10px] uppercase font-bold mb-1 tracking-widest">Account Age Reward</p>
+                <h2 id="age-bonus-text" class="text-5xl font-black italic text-white">0</h2>
+                <button onclick="claimAgeReward()" class="mt-6 w-full bg-white text-black py-4 rounded-2xl font-black italic uppercase">Claim Now</button>
             </div>
-            <button onclick="watchAd()" id="ad-btn" class="w-full bg-blue-600 py-4 rounded-2xl font-black italic shadow-lg shadow-blue-600/20 active:scale-95 transition-all">
-                WATCH & EARN
-            </button>
+
+            <div class="glass p-6 rounded-[2.5rem] border border-blue-500/20 mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="font-black italic text-lg uppercase">Daily Video</h3>
+                        <p class="text-[10px] text-blue-400 font-bold">+1,000 $TAGE EACH</p>
+                    </div>
+                    <div class="text-right">
+                        <p id="ads-left" class="text-2xl font-black italic text-blue-500">10</p>
+                        <p class="text-[8px] text-gray-500 font-bold uppercase">Left</p>
+                    </div>
+                </div>
+                <button onclick="watchAd()" id="ad-btn" class="w-full bg-blue-600 py-4 rounded-2xl font-black italic active:scale-95 transition-all">WATCH & EARN</button>
+            </div>
+
+            <div class="glass p-6 rounded-[2.5rem] text-center">
+                <h3 class="font-black italic text-lg mb-2 uppercase italic">Friends System</h3>
+                <p class="text-gray-500 text-xs mb-6 uppercase tracking-widest font-bold">Earn 20% from their activity</p>
+                <button onclick="inviteFriends()" class="w-full bg-zinc-900 py-4 rounded-2xl font-black italic border border-white/10">SHARE INVITE LINK</button>
+            </div>
         </div>
 
-        <div class="glass p-6 rounded-[2.5rem] border border-white/5 text-center">
-            <h3 class="font-black italic text-lg mb-2">FRIENDS SYSTEM</h3>
-            <p class="text-gray-500 text-xs mb-6 uppercase tracking-widest">Earn 20% from their activity</p>
-            <button onclick="inviteFriends()" class="w-full bg-zinc-900 py-4 rounded-2xl font-black italic border border-white/10 active:scale-95 transition-all">SHARE INVITE LINK</button>
-        </div>
-
-        <div id="view-tasks" class="glass p-4 rounded-[2rem] mt-6">
-            <div class="flex gap-2 mb-4 bg-black/40 p-1 rounded-xl">
-                <button onclick="switchTaskTab('today')" class="task-tab-btn flex-1 py-2 text-[10px] font-black rounded-xl bg-blue-600">TODAY</button>
-                <button onclick="switchTaskTab('partner')" class="task-tab-btn flex-1 py-2 text-[10px] font-black rounded-xl">PARTNERS</button>
-                <button onclick="switchTaskTab('completed')" class="task-tab-btn flex-1 py-2 text-[10px] font-black rounded-xl">COMPLETED</button>
+        <div id="view-tasks" class="view-section hidden">
+            <div class="flex gap-2 mb-6 bg-zinc-900/50 p-1 rounded-2xl">
+                <button onclick="switchTaskTab('today')" class="task-tab-btn flex-1 py-3 text-[10px] font-black rounded-xl bg-blue-600 uppercase">Today</button>
+                <button onclick="switchTaskTab('partner')" class="task-tab-btn flex-1 py-3 text-[10px] font-black rounded-xl uppercase">Partners</button>
+                <button onclick="switchTaskTab('completed')" class="task-tab-btn flex-1 py-3 text-[10px] font-black rounded-xl uppercase">Done</button>
             </div>
             <div id="task-list" class="space-y-3"></div>
         </div>
 
-        <div id="view-leaderboard" class="glass p-6 rounded-[2.5rem] mt-6">
+        <div id="view-leaderboard" class="view-section hidden">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="font-black italic text-xl">RANKINGS</h3>
-                <div class="flex gap-2 bg-zinc-900 p-1 rounded-xl">
-                    <button onclick="renderLB('points')" id="btn-lb-pts" class="text-[8px] font-bold px-3 py-1 rounded-lg bg-blue-600">POINTS</button>
-                    <button onclick="renderLB('age')" id="btn-lb-age" class="text-[8px] font-bold px-3 py-1 rounded-lg">OLD SCHOOL</button>
+                <h3 class="font-black italic text-xl uppercase italic text-blue-500">Rankings</h3>
+                <div class="flex gap-2 bg-zinc-900/50 p-1 rounded-xl">
+                    <button onclick="renderLB('points')" id="btn-lb-pts" class="text-[8px] font-bold px-3 py-1 rounded-lg bg-blue-600 uppercase">Points</button>
+                    <button onclick="renderLB('age')" id="btn-lb-age" class="text-[8px] font-bold px-3 py-1 rounded-lg uppercase">Old School</button>
                 </div>
             </div>
             <div id="lb-list" class="space-y-3"></div>
+        </div>
+
+        <div class="fixed bottom-0 left-0 w-full bg-black border-t border-white/10 flex justify-around p-4 pb-8 z-50 backdrop-blur-xl">
+            <button onclick="showView('home')" id="nav-home" class="flex flex-col items-center gap-1 text-gray-600 font-black text-[10px] uppercase nav-active">Home</button>
+            <button onclick="showView('tasks')" id="nav-tasks" class="flex flex-col items-center gap-1 text-gray-600 font-black text-[10px] uppercase">Tasks</button>
+            <button onclick="showView('leaderboard')" id="nav-leaderboard" class="flex flex-col items-center gap-1 text-gray-600 font-black text-[10px] uppercase">Rank</button>
         </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         const API = "https://tagebot-production.up.railway.app";
-        let user = {};
-        const userData = { balance: 0 };
-
-        // Dataset to map ID ranges to years
-        const idMilestones = [
-            { id: 0, date: new Date('2013-08-14') },
-            { id: 200000000, date: new Date('2016-01-01') },
-            { id: 1000000000, date: new Date('2020-01-01') },
-            { id: 5000000000, date: new Date('2022-01-01') },
-            { id: 6500000000, date: new Date('2024-01-01') },
-            { id: 8500000000, date: new Date() }
-        ];
+        let user = { points: 0, account_age_days: 0 };
 
         const allTasks = [
-            { title: "Watch 10 videos", reward: 10000, type: "today" },
-            { title: "Invite 1 friend", reward: 2500, type: "today" },
-            { title: "Age reward claimed", reward: 0, type: "today", done: true },
-            { title: "Follow Partner Channel", reward: 1500, type: "partner" },
-            { title: "Retweet Partner Post", reward: 1200, type: "partner" }
+            { title: "Watch 10 videos", reward: 10000, type: "today", done: false },
+            { title: "Follow $TAGE on X", reward: 5000, type: "today", done: false },
+            { title: "Visit Partner Site", reward: 2500, type: "partner", done: false },
+            { title: "Follow Partner TG", reward: 3000, type: "partner", done: false }
         ];
 
-        const lbData = [
-            { name: "@you", bal: 0, days: 0 },
-            { name: "@shadowfox", bal: 99200, days: 2400 },
-            { name: "@nightbyte", bal: 77300, days: 1800 },
-            { name: "@retrovoid", bal: 68100, days: 3000 },
-            { name: "@aether", bal: 54400, days: 1400 }
-        ];
+        // NAVIGATION LOGIC
+        function showView(name) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
+            document.getElementById('view-' + name).classList.remove('hidden');
+            
+            document.querySelectorAll('[id^="nav-"]').forEach(n => n.classList.remove('nav-active'));
+            document.getElementById('nav-' + name).classList.add('nav-active');
 
-        function calculateDays(userId) {
-            let estDate = idMilestones[0].date;
-            for (let i = 0; i < idMilestones.length - 1; i++) {
-                if (userId >= idMilestones[i].id && userId <= idMilestones[i + 1].id) {
-                    const ratio = (userId - idMilestones[i].id) / (idMilestones[i + 1].id - idMilestones[i].id);
-                    const diff = idMilestones[i + 1].date - idMilestones[i].date;
-                    estDate = new Date(idMilestones[i].date.getTime() + (ratio * diff));
-                    break;
-                }
-            }
-            return Math.floor((new Date() - estDate) / (1000 * 60 * 60 * 24));
-        }
-
-        function animateNumber(id, start, end, duration) {
-            const el = document.getElementById(id);
-            if (!el) return;
-            const startTime = performance.now();
-
-            function tick(now) {
-                const progress = Math.min((now - startTime) / duration, 1);
-                const value = Math.floor(start + (end - start) * progress);
-                el.innerText = value.toLocaleString();
-                if (progress < 1) requestAnimationFrame(tick);
-            }
-
-            requestAnimationFrame(tick);
-        }
-
-        // --- 2. UPDATED START SCANNING ---
-        function startScanning() {
-            document.getElementById('welcome').classList.add('hidden');
-            document.getElementById('scanner').classList.remove('hidden');
-
-            // Get real ID from Telegram
-            const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 1755569721;
-            const days = calculateDays(userId);
-            const reward = days * 10; // 10 coins per day
-
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress++;
-                document.getElementById('progress-bar').style.width = progress + '%';
-                document.getElementById('progress-text').innerText = progress + '%';
-                if (progress === 100) {
-                    clearInterval(interval);
-                    showResult(reward, days);
-                }
-            }, 30);
-        }
-
-        function showResult(reward, days) {
-            document.getElementById('status').innerText = "CALCULATION COMPLETE";
-            const result = document.getElementById('result');
-            result.classList.remove('hidden');
-
-            const existingInfo = result.querySelector('.verified-age');
-            if (existingInfo) existingInfo.remove();
-
-            // Show the "Days" info
-            const infoText = document.createElement('p');
-            infoText.className = "verified-age text-blue-400 font-bold text-[10px] mb-2 uppercase";
-            infoText.innerText = `Verified: ${days} days on Telegram`;
-            result.prepend(infoText);
-
-            animateNumber('total-reward', 0, reward, 1500);
-            userData.balance = reward;
-        }
-
-        function enterApp() {
-            document.getElementById('startup').classList.add('hidden');
-            document.getElementById('app').classList.remove('hidden');
-            updateUI();
-            switchTaskTab('today');
-            renderLB('points');
-        }
-
-        function renderTaskElements(filtered) {
-            const list = document.getElementById('task-list');
-            list.innerHTML = filtered.map((task) => `
-                <div class="flex justify-between items-center bg-black/40 rounded-xl p-3 border border-white/5">
-                    <div>
-                        <p class="text-xs font-bold">${task.title}</p>
-                        <p class="text-[10px] text-blue-400 font-bold">+${task.reward.toLocaleString()} $TAGE</p>
-                    </div>
-                    <button class="text-[9px] px-3 py-1 rounded-full bg-zinc-900 border border-white/10">${task.done ? 'DONE' : 'GO'}</button>
-                </div>
-            `).join('') || '<p class="text-xs text-gray-500">No tasks here yet.</p>';
+            if(name === 'tasks') switchTaskTab('today');
+            if(name === 'leaderboard') renderLB('points');
         }
 
         function switchTaskTab(category) {
-            const buttons = document.querySelectorAll('.task-tab-btn');
-            buttons.forEach((btn) => btn.classList.remove('bg-blue-600'));
-            const label = category === 'partner' ? 'partners' : category;
-            const active = Array.from(buttons).find((btn) => btn.textContent.trim().toLowerCase() === label);
-            if (active) active.classList.add('bg-blue-600');
+            document.querySelectorAll('.task-tab-btn').forEach(b => b.classList.remove('bg-blue-600'));
+            event.currentTarget.classList.add('bg-blue-600');
 
-            // Filter tasks based on the tab clicked
-            const filtered = allTasks.filter((t) => {
-                if (category === 'completed') return t.done === true;
-                return t.type === category && t.done !== true;
+            const list = document.getElementById('task-list');
+            const filtered = allTasks.filter(t => {
+                if(category === 'completed') return t.done;
+                return t.type === category && !t.done;
             });
-            renderTaskElements(filtered);
+
+            list.innerHTML = filtered.map(t => `
+                <div class="glass p-4 rounded-2xl flex justify-between items-center">
+                    <div><p class="text-xs font-bold uppercase italic">${t.title}</p><p class="text-blue-500 font-black text-[10px]">+${t.reward.toLocaleString()}</p></div>
+                    <button class="bg-blue-600 text-[9px] px-4 py-1 rounded-lg font-black uppercase">${t.done ? 'Done' : 'Go'}</button>
+                </div>
+            `).join('') || '<p class="text-center text-gray-500 text-[10px] py-10 uppercase tracking-widest font-bold">No tasks available</p>';
         }
 
-        function renderLB(type = 'points') {
-            const pointsBtn = document.getElementById('btn-lb-pts');
-            const ageBtn = document.getElementById('btn-lb-age');
-            pointsBtn.classList.toggle('bg-blue-600', type === 'points');
-            ageBtn.classList.toggle('bg-blue-600', type === 'age');
+        // RANKING LOGIC
+        function renderLB(type) {
+            document.getElementById('btn-lb-pts').classList.toggle('bg-blue-600', type === 'points');
+            document.getElementById('btn-lb-age').classList.toggle('bg-blue-600', type === 'age');
 
-            lbData[0] = {
-                name: `@${user.username || 'you'}`,
-                bal: user.points || 0,
-                days: user.account_age_days || calculateDays(user.telegram_id || 1755569721)
-            };
+            const mockData = [
+                { name: "@Whale_Admin", bal: 2500000, days: 3200 },
+                { name: "@CryptoKing", bal: 1200000, days: 1500 },
+                { name: "@Guest_User", bal: user.points, days: user.account_age_days }
+            ];
 
-            const lb = document.getElementById('lb-list');
-
-            // Sort logic: 'points' for high balance, 'age' for oldest account
-            let sortedData = [...lbData];
-            if (type === 'age') {
-                sortedData.sort((a, b) => b.days - a.days); // Most days at top
-            } else {
-                sortedData.sort((a, b) => b.bal - a.bal); // Most points at top
-            }
-
-            lb.innerHTML = sortedData.map((p, i) => `
-                <div class="flex justify-between items-center p-4 rounded-2xl bg-zinc-900/40">
+            const sorted = mockData.sort((a, b) => type === 'age' ? b.days - a.days : b.bal - a.bal);
+            document.getElementById('lb-list').innerHTML = sorted.map((p, i) => `
+                <div class="flex justify-between items-center p-4 rounded-2xl bg-zinc-900/40 border border-white/5">
                     <div class="flex items-center gap-4">
-                        <span class="text-[10px] font-black text-gray-700 italic">#${i + 1}</span>
-                        <div>
-                            <p class="text-sm font-bold">${p.name}</p>
-                            ${type === 'age' ? `<p class="text-[8px] text-blue-400 font-bold">${p.days} DAYS</p>` : ''}
-                        </div>
+                        <span class="text-[10px] font-black text-gray-800 italic">#${i+1}</span>
+                        <div><p class="text-sm font-bold">${p.name}</p>${type === 'age' ? `<p class="text-[8px] text-blue-400 font-bold uppercase">${p.days} Days</p>` : ''}</div>
                     </div>
                     <span class="font-black text-blue-500 text-sm">${p.bal.toLocaleString()}</span>
                 </div>
             `).join('');
         }
 
+        // INITIALIZATION
         async function init() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const refBy = urlParams.get('tgWebAppStartParam');
-
             try {
                 const res = await fetch(`${API}/auth`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         userId: tg.initDataUnsafe.user.id,
-                        username: tg.initDataUnsafe.user.username,
-                        refBy
+                        username: tg.initDataUnsafe.user.username
                     })
                 });
                 user = await res.json();
-
-                if (user.has_claimed_age === false) {
-                    document.getElementById('age-box').classList.remove('hidden');
-                    document.getElementById('age-bonus-text').innerText = (user.account_age_days * 10).toLocaleString();
-                }
-
-                startScanning();
-            } catch (e) {
-                document.getElementById('status').innerText = "CONNECTION ERROR. CHECK BACKEND.";
+                
+                document.getElementById('welcome').classList.add('hidden');
+                document.getElementById('scanner').classList.remove('hidden');
+                
+                let prog = 0;
+                let interval = setInterval(() => {
+                    prog++;
+                    document.getElementById('progress-bar').style.width = prog + "%";
+                    if(prog === 100) {
+                        clearInterval(interval);
+                        document.getElementById('status').innerText = "VERIFIED";
+                        document.getElementById('result').classList.remove('hidden');
+                        document.getElementById('total-reward').innerText = (user.account_age_days * 10).toLocaleString();
+                    }
+                }, 30);
+            } catch(e) {
+                document.getElementById('status').innerText = "OFFLINE. RESTART BOT.";
             }
         }
 
-        function updateUI() {
-            document.getElementById('balance').innerText = (user.points || 0).toLocaleString();
-            document.getElementById('user-name').innerText = "@" + (user.username || "Guest");
-            document.getElementById('uid-display').innerText = "UID: " + (user.telegram_id || "000000");
-            const left = 10 - (user.daily_ads_watched || 0);
-            document.getElementById('ads-left').innerText = left;
-            if (left <= 0) {
-                document.getElementById('ad-btn').innerText = "LIMIT REACHED";
-                document.getElementById('ad-btn').disabled = true;
-                document.getElementById('ad-btn').style.opacity = "0.5";
-            }
-        }
-
-        async function watchAd() {
-            const res = await fetch(`${API}/watch-ad`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user.telegram_id })
-            });
-            user = await res.json();
+        function enterApp() {
+            document.getElementById('startup').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
             updateUI();
         }
 
-        async function claimAgeReward() {
-            const claimBtn = document.querySelector('#age-box button');
-            if (!claimBtn) return;
-
-            claimBtn.disabled = true;
-            claimBtn.innerText = "PROCESSING...";
-
-            try {
-                const res = await fetch(`${API}/claim-age-reward`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: user.telegram_id })
-                });
-
-                if (res.ok) {
-                    user = await res.json();
-                    updateUI();
-                    document.getElementById('age-box').classList.add('hidden');
-                    return;
-                }
-
-                if (res.status === 404 || res.status === 405) {
-                    user.has_claimed_age = true;
-                    document.getElementById('age-box').classList.add('hidden');
-                    return;
-                }
-
-                claimBtn.disabled = false;
-                claimBtn.innerText = "CLAIM REWARD";
-            } catch (e) {
-                claimBtn.disabled = false;
-                claimBtn.innerText = "CLAIM REWARD";
+        function updateUI() {
+            document.getElementById('balance').innerText = user.points.toLocaleString();
+            document.getElementById('user-name').innerText = "@" + (user.username || "Guest");
+            document.getElementById('uid-display').innerText = "UID: " + (user.telegram_id || "000000");
+            document.getElementById('ads-left').innerText = 10 - (user.daily_ads_watched || 0);
+            if(!user.has_claimed_age) {
+                document.getElementById('age-box').classList.remove('hidden');
+                document.getElementById('age-bonus-text').innerText = (user.account_age_days * 10).toLocaleString();
             }
-        }
-
-        function inviteFriends() {
-            const link = `https://t.me/tagegembot?start=${user.telegram_id}`;
-            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=Join $TAGE! `);
         }
 
         init();
