@@ -1,7 +1,9 @@
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
+const cors = require('cors');
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
@@ -16,34 +18,71 @@ const getAge = (id) => {
 
 app.post('/auth', async (req, res) => {
     const { userId, username, refBy } = req.body;
-    let { data: user } = await supabase.from('users').select('*').eq('telegram_id', userId).single();
+    let { data: user, error: userError } = await supabase.from('users').select('*').eq('telegram_id', userId).single();
+
+    if (userError && userError.code !== 'PGRST116') return res.status(500).json({ error: userError.message });
 
     if (!user) {
         const age = getAge(userId);
-        const reward = age * 10;
-        
-        const { data: newUser } = await supabase.from('users').insert({
-            telegram_id: userId, username, account_age_days: age, points: reward, referred_by: refBy
+        const { data: newUser, error: insertError } = await supabase.from('users').insert({
+            telegram_id: userId,
+            username,
+            account_age_days: age,
+            points: 0,
+            has_claimed_age: false,
+            daily_ads_watched: 0,
+            referred_by: refBy
         }).select().single();
 
-        // Give 20% to Inviter
-        if (refBy) await supabase.rpc('increment_points', { user_id_param: refBy, amount: reward * 0.20 });
+        if (insertError) return res.status(500).json({ error: insertError.message });
         return res.json(newUser);
     }
     res.json(user);
 });
 
+app.post('/claim-age-reward', async (req, res) => {
+    const { userId } = req.body;
+    const { data: user, error: userError } = await supabase.from('users').select('*').eq('telegram_id', userId).single();
+
+    if (userError) return res.status(500).json({ error: userError.message });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.has_claimed_age) return res.json(user);
+
+    const reward = (user.account_age_days || 0) * 10;
+    const { data: updatedUser, error: updateError } = await supabase.from('users').update({
+        points: (user.points || 0) + reward,
+        has_claimed_age: true
+    }).eq('telegram_id', userId).select().single();
+
+    if (updateError) return res.status(500).json({ error: updateError.message });
+
+    // Give 20% to inviter when age reward is claimed
+    if (user.referred_by) {
+        await supabase.rpc('increment_points', {
+            user_id_param: user.referred_by,
+            amount: reward * 0.20
+        });
+    }
+
+    res.json(updatedUser);
+});
+
 // Daily Ad Logic
 app.post('/watch-ad', async (req, res) => {
     const { userId } = req.body;
-    const { data: user } = await supabase.from('users').select('*').eq('telegram_id', userId).single();
-    
-    if (user.daily_ads_watched >= 10) return res.status(400).json({ error: 'Limit reached' });
+    const { data: user, error: userError } = await supabase.from('users').select('*').eq('telegram_id', userId).single();
 
-    const { data } = await supabase.from('users').update({ 
-        points: user.points + 1000, 
-        daily_ads_watched: user.daily_ads_watched + 1 
+    if (userError) return res.status(500).json({ error: userError.message });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    if ((user.daily_ads_watched || 0) >= 10) return res.status(400).json({ error: 'Limit reached' });
+
+    const { data, error: updateError } = await supabase.from('users').update({ 
+        points: (user.points || 0) + 1000, 
+        daily_ads_watched: (user.daily_ads_watched || 0) + 1 
     }).eq('telegram_id', userId).select().single();
+
+    if (updateError) return res.status(500).json({ error: updateError.message });
     
     res.json(data);
 });

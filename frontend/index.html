@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>$TAGE | Elite Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { background-color: #000; color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; user-select: none; }
+        .glass { background: rgba(15, 15, 15, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .animate-scan { animation: scan 2s linear infinite; }
+        @keyframes scan { 0% { width: 0%; } 100% { width: 100%; } }
+    </style>
+</head>
+<body class="p-6">
+    <div id="startup" class="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-10">
+        <h1 class="text-5xl font-black italic mb-4 tracking-tighter">$TAGE</h1>
+        <p id="status" class="text-blue-500 font-bold uppercase text-[10px] tracking-[0.3em]">Verifying Account Age...</p>
+        <div class="w-full max-w-xs bg-zinc-900 h-1 mt-6 overflow-hidden">
+            <div class="bg-blue-600 h-full animate-scan"></div>
+        </div>
+    </div>
+
+    <div id="app" class="hidden pb-32">
+        <div class="flex justify-between items-center mb-8 sticky top-0 bg-black/80 py-4 z-40 backdrop-blur-md">
+            <div>
+                <p id="user-name" class="font-black italic text-lg">@Guest</p>
+                <p id="uid-display" class="text-[10px] text-gray-600 font-bold">UID: 000000</p>
+            </div>
+            <div class="glass px-5 py-2 rounded-2xl border-blue-500/20">
+                <span id="balance" class="text-blue-500 font-black text-xl">0</span>
+            </div>
+        </div>
+
+        <div id="age-box" class="glass p-8 rounded-[2.5rem] text-center mb-8 border-l-4 border-blue-600 hidden">
+            <p class="text-gray-500 text-[10px] uppercase font-bold mb-1">Account Age Reward</p>
+            <h2 id="age-bonus-text" class="text-5xl font-black italic text-white">0</h2>
+            <button onclick="claimAgeReward()" class="mt-6 w-full bg-white text-black py-4 rounded-2xl font-black italic active:scale-95 transition-all">CLAIM REWARD</button>
+        </div>
+
+        <div class="glass p-6 rounded-[2.5rem] border border-blue-500/20 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="font-black italic text-lg uppercase">Daily Video</h3>
+                    <p class="text-[10px] text-blue-400 font-bold">+1,000 $TAGE EACH</p>
+                </div>
+                <div class="text-right">
+                    <p id="ads-left" class="text-2xl font-black italic text-blue-500">10</p>
+                    <p class="text-[8px] text-gray-500 font-bold">LEFT</p>
+                </div>
+            </div>
+            <button onclick="watchAd()" id="ad-btn" class="w-full bg-blue-600 py-4 rounded-2xl font-black italic shadow-lg shadow-blue-600/20 active:scale-95 transition-all">
+                WATCH & EARN
+            </button>
+        </div>
+
+        <div class="glass p-6 rounded-[2.5rem] border border-white/5 text-center">
+            <h3 class="font-black italic text-lg mb-2">FRIENDS SYSTEM</h3>
+            <p class="text-gray-500 text-xs mb-6 uppercase tracking-widest">Earn 20% from their activity</p>
+            <button onclick="inviteFriends()" class="w-full bg-zinc-900 py-4 rounded-2xl font-black italic border border-white/10 active:scale-95 transition-all">SHARE INVITE LINK</button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        // REPLACE THIS with your Railway link from Step 2
+        const API = "https://tagebot-production.up.railway.app";
+        let user = {};
+
+        async function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const refBy = urlParams.get('tgWebAppStartParam');
+
+            try {
+                const res = await fetch(`${API}/auth`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        userId: tg.initDataUnsafe.user.id,
+                        username: tg.initDataUnsafe.user.username,
+                        refBy: refBy
+                    })
+                });
+                user = await res.json();
+                
+                // Show claim box only when backend explicitly says it is unclaimed
+                if (user.has_claimed_age === false) {
+                    document.getElementById('age-box').classList.remove('hidden');
+                    document.getElementById('age-bonus-text').innerText = (user.account_age_days * 10).toLocaleString();
+                }
+
+                setTimeout(() => {
+                    document.getElementById('startup').classList.add('hidden');
+                    document.getElementById('app').classList.remove('hidden');
+                    updateUI();
+                }, 2500);
+            } catch (e) {
+                document.getElementById('status').innerText = "CONNECTION ERROR. CHECK BACKEND.";
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('balance').innerText = user.points.toLocaleString();
+            document.getElementById('user-name').innerText = "@" + user.username;
+            document.getElementById('uid-display').innerText = "UID: " + user.telegram_id;
+            const left = 10 - (user.daily_ads_watched || 0);
+            document.getElementById('ads-left').innerText = left;
+            if (left <= 0) {
+                document.getElementById('ad-btn').innerText = "LIMIT REACHED";
+                document.getElementById('ad-btn').disabled = true;
+                document.getElementById('ad-btn').style.opacity = "0.5";
+            }
+        }
+
+        async function watchAd() {
+            // This calls your Railway /watch-ad route
+            const res = await fetch(`${API}/watch-ad`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ userId: user.telegram_id })
+            });
+            user = await res.json();
+            updateUI();
+        }
+
+        async function claimAgeReward() {
+            const claimBtn = document.querySelector('#age-box button');
+            if (!claimBtn) return;
+
+            claimBtn.disabled = true;
+            claimBtn.innerText = "PROCESSING...";
+
+            try {
+                const res = await fetch(`${API}/claim-age-reward`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ userId: user.telegram_id })
+                });
+
+                if (res.ok) {
+                    const updatedUser = await res.json();
+                    user = updatedUser;
+                    updateUI();
+                    document.getElementById('age-box').classList.add('hidden');
+                    return;
+                }
+
+                // Fallback for backends that award age points at signup and don't expose claim endpoint
+                if (res.status === 404 || res.status === 405) {
+                    user.has_claimed_age = true;
+                    document.getElementById('age-box').classList.add('hidden');
+                    return;
+                }
+
+                claimBtn.disabled = false;
+                claimBtn.innerText = "CLAIM REWARD";
+            } catch (e) {
+                claimBtn.disabled = false;
+                claimBtn.innerText = "CLAIM REWARD";
+            }
+        }
+
+        function inviteFriends() {
+            const link = `https://t.me/tagegembot?start=${user.telegram_id}`;
+            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=Join $TAGE! `);
+        }
+
+        init();
+    </script>
+</body>
+</html>
