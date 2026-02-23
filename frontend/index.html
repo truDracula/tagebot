@@ -37,7 +37,7 @@
         <div id="view-home" class="view-section">
             <div class="glass p-8 rounded-[2.5rem] text-center mb-6">
                 <h3 class="font-black italic mb-4 uppercase">Daily Bonus</h3>
-                <button onclick="alert('Video Ad Loading...')" class="w-full bg-blue-600 py-4 rounded-2xl font-black italic">WATCH & EARN +1,000</button>
+                <button onclick="watchAd()" class="w-full bg-blue-600 py-4 rounded-2xl font-black italic">WATCH & EARN +1,000</button>
             </div>
         </div>
 
@@ -56,13 +56,23 @@
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        let user = { username: "Guest", id: "000000", balance: 0 };
+        const API = "https://tagebot-production.up.railway.app";
+        let userData = null;
         const taskData = [
-            { title: "Join $TAGE TG", reward: 5000, type: "today" },
-            { title: "Follow $TAGE X", reward: 3000, type: "today" },
-            { title: "Partner Channel", reward: 2500, type: "partner" }
+            { id: 1, title: "Join $TAGE TG", reward: 5000, type: "today", done: false },
+            { id: 2, title: "Follow $TAGE X", reward: 3000, type: "today", done: false },
+            { id: 3, title: "Partner Channel", reward: 2500, type: "partner", done: false }
         ];
+
+        function updateUI() {
+            if (!userData) return;
+            const username = userData.username || "Guest";
+            const uid = userData.telegram_id || "000000";
+            const points = userData.points || 0;
+            document.getElementById('user-name').innerText = "@" + username;
+            document.getElementById('uid-display').innerText = "UID: " + uid;
+            document.getElementById('balance').innerText = points.toLocaleString();
+        }
 
         function showView(name) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
@@ -77,27 +87,31 @@
             document.getElementById('btn-partner').classList.toggle('bg-blue-600', type === 'partner');
             
             const list = document.getElementById('task-list');
-            const filtered = taskData.filter(t => t.type === type);
+            const filtered = taskData.filter(t => t.type === type && !t.done);
             list.innerHTML = filtered.map(t => `
                 <div class="glass p-4 rounded-2xl flex justify-between items-center">
                     <div><p class="text-xs font-bold uppercase">${t.title}</p><p class="text-blue-500 font-black text-[10px]">+${t.reward}</p></div>
-                    <button class="bg-blue-600 text-[9px] px-4 py-1 rounded-lg font-black">GO</button>
+                    <button onclick="completeTask(${t.id})" class="bg-blue-600 text-[9px] px-4 py-1 rounded-lg font-black">GO</button>
                 </div>
-            `).join('');
+            `).join('') || '<p class="text-xs text-gray-500">No tasks</p>';
         }
 
-        function init() {
-            // Force grab data
+        async function initApp() {
+            const tg = window.Telegram.WebApp;
             tg.ready();
             tg.expand();
-            
-            const checkData = setInterval(() => {
-                if (tg.initDataUnsafe.user) {
-                    user.username = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name;
-                    user.id = tg.initDataUnsafe.user.id;
-                    clearInterval(checkData);
-                }
-            }, 100);
+
+            const res = await fetch(`${API}/auth`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userId: tg.initDataUnsafe.user.id,
+                    username: tg.initDataUnsafe.user.username
+                })
+            });
+
+            userData = await res.json();
+            updateUI();
 
             let p = 0;
             let int = setInterval(() => {
@@ -110,14 +124,43 @@
             }, 20);
         }
 
+        async function watchAd() {
+            const res = await fetch(`${API}/watch-ad`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userId: userData.telegram_id
+                })
+            });
+
+            userData = await res.json();
+            updateUI();
+        }
+
+        async function completeTask(taskId) {
+            const res = await fetch(`${API}/complete-task`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userId: userData.telegram_id,
+                    taskId: taskId
+                })
+            });
+
+            userData = await res.json();
+            const task = taskData.find((t) => t.id === taskId);
+            if (task) task.done = true;
+            updateUI();
+            renderTasks('today');
+        }
+
         function enterApp() {
             document.getElementById('startup').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
-            document.getElementById('user-name').innerText = "@" + user.username;
-            document.getElementById('uid-display').innerText = "UID: " + user.id;
+            updateUI();
         }
 
-        init();
+        initApp();
     </script>
 </body>
 </html>

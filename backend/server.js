@@ -110,6 +110,27 @@ app.post('/watch-ad', async (req, res) => {
     res.json(data);
 });
 
+app.post('/complete-task', async (req, res) => {
+    const { userId, taskId } = req.body;
+    const rewards = {
+        1: 5000,
+        2: 3000,
+        3: 2500
+    };
+    const reward = rewards[taskId] || 0;
+
+    const { data: user, error: userError } = await supabase.from('users').select('*').eq('telegram_id', userId).single();
+    if (userError) return res.status(500).json({ error: userError.message });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const { data, error: updateError } = await supabase.from('users').update({
+        points: (user.points || 0) + reward
+    }).eq('telegram_id', userId).select().single();
+
+    if (updateError) return res.status(500).json({ error: updateError.message });
+    res.json(data);
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
