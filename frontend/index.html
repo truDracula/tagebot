@@ -41,17 +41,9 @@
         </div>
 
         <div id="view-home" class="view-section">
-            <div class="glass p-6 rounded-[2.5rem] border border-blue-500/20 mb-8">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-black italic text-lg uppercase">Daily Video</h3>
-                    <span id="ads-left" class="text-blue-500 font-black">10 Left</span>
-                </div>
-                <button onclick="watchAd()" class="w-full bg-blue-600 py-4 rounded-2xl font-black italic active:scale-95 transition-all">WATCH & EARN +1,000</button>
-            </div>
-            <div class="glass p-6 rounded-[2.5rem] text-center">
-                <h3 class="font-black italic text-lg mb-2 uppercase">Invite Friends</h3>
-                <p class="text-gray-500 text-[10px] mb-6 uppercase font-bold tracking-widest">Earn 20% of their rewards</p>
-                <button onclick="inviteFriends()" class="w-full bg-zinc-900 py-4 rounded-2xl font-black italic border border-white/10 uppercase">Share Link</button>
+            <div class="glass p-6 rounded-[2.5rem] border border-blue-500/20 mb-8 text-center">
+                <h3 class="font-black italic text-lg uppercase mb-4">Daily Check-in</h3>
+                <button onclick="watchAd()" class="w-full bg-blue-600 py-4 rounded-2xl font-black italic">WATCH VIDEO +1,000</button>
             </div>
         </div>
 
@@ -59,19 +51,12 @@
             <div class="flex gap-2 mb-6 bg-zinc-900/50 p-1 rounded-2xl">
                 <button onclick="switchTaskTab('today')" id="tab-today" class="task-tab-btn flex-1 py-3 text-[10px] font-black rounded-xl bg-blue-600 uppercase">Today</button>
                 <button onclick="switchTaskTab('partner')" id="tab-partner" class="task-tab-btn flex-1 py-3 text-[10px] font-black rounded-xl uppercase">Partners</button>
-                <button onclick="switchTaskTab('completed')" id="tab-done" class="task-tab-btn flex-1 py-3 text-[10px] font-black rounded-xl uppercase">Done</button>
             </div>
             <div id="task-list" class="space-y-3"></div>
         </div>
 
         <div id="view-leaderboard" class="view-section hidden">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="font-black italic text-xl uppercase text-blue-500">Rankings</h3>
-                <div class="flex gap-1 bg-zinc-900/50 p-1 rounded-xl">
-                    <button onclick="renderLB('points')" id="lb-pts-btn" class="text-[8px] font-bold px-3 py-1 rounded-lg bg-blue-600 uppercase">Points</button>
-                    <button onclick="renderLB('age')" id="lb-age-btn" class="text-[8px] font-bold px-3 py-1 rounded-lg uppercase">Old School</button>
-                </div>
-            </div>
+            <h3 class="font-black italic text-xl uppercase mb-6 text-blue-500 text-center">Rankings</h3>
             <div id="lb-list" class="space-y-3"></div>
         </div>
 
@@ -88,9 +73,9 @@
         let user = { points: 0, account_age_days: 0, telegram_id: "000000", username: "Guest" };
 
         const tasks = [
-            { id: 1, title: "Join $TAGE Channel", reward: 5000, type: "today", done: false },
-            { id: 2, title: "Follow $TAGE on X", reward: 3000, type: "today", done: false },
-            { id: 3, title: "Partner Channel Join", reward: 2500, type: "partner", done: false }
+            { title: "Join $TAGE TG", reward: 5000, type: "today", done: false },
+            { title: "Follow $TAGE X", reward: 3000, type: "today", done: false },
+            { title: "Visit Partner", reward: 2000, type: "partner", done: false }
         ];
 
         function showView(name) {
@@ -98,106 +83,61 @@
             document.getElementById('view-' + name).classList.remove('hidden');
             document.querySelectorAll('[id^="nav-"]').forEach(n => n.classList.remove('nav-active'));
             document.getElementById('nav-' + name).classList.add('nav-active');
-
             if(name === 'tasks') switchTaskTab('today');
-            if(name === 'leaderboard') renderLB('points');
         }
 
         function switchTaskTab(category) {
             document.querySelectorAll('.task-tab-btn').forEach(b => b.classList.remove('bg-blue-600'));
-            if(category === 'today') document.getElementById('tab-today').classList.add('bg-blue-600');
-            if(category === 'partner') document.getElementById('tab-partner').classList.add('bg-blue-600');
-            if(category === 'completed') document.getElementById('tab-done').classList.add('bg-blue-600');
-
+            document.getElementById('tab-' + category).classList.add('bg-blue-600');
             const list = document.getElementById('task-list');
-            const filtered = tasks.filter(t => category === 'completed' ? t.done : (t.type === category && !t.done));
-
+            const filtered = tasks.filter(t => t.type === category);
             list.innerHTML = filtered.map(t => `
-                <div class="glass p-4 rounded-2xl flex justify-between items-center border border-white/5">
+                <div class="glass p-4 rounded-2xl flex justify-between items-center">
                     <div><p class="text-xs font-bold uppercase italic">${t.title}</p><p class="text-blue-500 font-black text-[10px]">+${t.reward.toLocaleString()}</p></div>
                     <button class="bg-blue-600 text-[9px] px-4 py-1 rounded-lg font-black uppercase">Go</button>
-                </div>
-            `).join('') || '<p class="text-center text-gray-500 py-10 text-[10px] font-bold uppercase">No tasks here!</p>';
-        }
-
-        function renderLB(type) {
-            document.getElementById('lb-pts-btn').classList.toggle('bg-blue-600', type === 'points');
-            document.getElementById('lb-age-btn').classList.toggle('bg-blue-600', type === 'age');
-
-            const mockData = [
-                { name: "@Whale_Admin", bal: 2500000, days: 3200 },
-                { name: "@CryptoKing", bal: 1200000, days: 1500 },
-                { name: user.username, bal: user.points, days: user.account_age_days }
-            ];
-
-            const sorted = mockData.sort((a, b) => type === 'age' ? b.days - a.days : b.bal - a.bal);
-            document.getElementById('lb-list').innerHTML = sorted.map((p, i) => `
-                <div class="flex justify-between items-center p-4 rounded-2xl bg-zinc-900/40 border border-white/5">
-                    <div class="flex items-center gap-4">
-                        <span class="text-[10px] font-black text-gray-800 italic">#${i+1}</span>
-                        <div><p class="text-sm font-bold italic">${p.name}</p>${type === 'age' ? `<p class="text-[8px] text-blue-400 font-bold tracking-tighter">${p.days} DAYS OLD</p>` : ''}</div>
-                    </div>
-                    <span class="font-black text-blue-500 text-sm italic">${p.bal.toLocaleString()}</span>
                 </div>
             `).join('');
         }
 
-        function runScanner() {
-            let p = 0;
-            const interval = setInterval(() => {
-                p++;
-                document.getElementById('progress-bar').style.width = p + "%";
-                if (p === 100) {
-                    clearInterval(interval);
-                    document.getElementById('status').innerText = "VERIFIED";
-                    document.getElementById('result').classList.remove('hidden');
-                    document.getElementById('total-reward').innerText = ((user.account_age_days || 0) * 10).toLocaleString();
-                }
-            }, 30);
-        }
-
         async function init() {
-            // 1. Get real data from Telegram immediately
+            // FIX: Grab real Telegram data immediately
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                user.username = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name;
+                user.username = tg.initDataUnsafe.user.username || "Anonymous";
                 user.telegram_id = tg.initDataUnsafe.user.id;
-
-                // Update the HUD right away so it doesn't say "Guest"
-                document.getElementById('user-name').innerText = "@" + user.username;
-                document.getElementById('uid-display').innerText = "UID: " + user.telegram_id;
             }
 
             try {
                 const res = await fetch(`${API}/auth`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: user.telegram_id,
-                        username: user.username
-                    })
+                    body: JSON.stringify({ userId: user.telegram_id, username: user.username })
                 });
-
                 const data = await res.json();
                 user.points = data.points;
                 user.account_age_days = data.account_age_days;
-                user.username = data.username || user.username;
-                user.telegram_id = data.telegram_id || user.telegram_id;
-
-                // Start the scanner animation
-                runScanner();
-            } catch (e) {
-                console.error("Backend offline, using fallback age.");
-                user.account_age_days = 1200; // Fallback so the app doesn't break
-                runScanner();
+                
+                // Animation logic
+                let p = 0;
+                let interval = setInterval(() => {
+                    p++;
+                    document.getElementById('progress-bar').style.width = p + "%";
+                    if(p === 100) {
+                        clearInterval(interval);
+                        document.getElementById('result').classList.remove('hidden');
+                        document.getElementById('total-reward').innerText = (user.account_age_days * 10).toLocaleString();
+                    }
+                }, 20);
+            } catch(e) {
+                document.getElementById('status').innerText = "BACKEND ERROR. RESTART BOT.";
             }
         }
 
         function enterApp() {
             document.getElementById('startup').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
-            document.getElementById('balance').innerText = user.points.toLocaleString();
             document.getElementById('user-name').innerText = "@" + user.username;
             document.getElementById('uid-display').innerText = "UID: " + user.telegram_id;
+            document.getElementById('balance').innerText = user.points.toLocaleString();
         }
 
         init();
