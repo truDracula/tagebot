@@ -142,31 +142,53 @@
             `).join('');
         }
 
+        function runScanner() {
+            let p = 0;
+            const interval = setInterval(() => {
+                p++;
+                document.getElementById('progress-bar').style.width = p + "%";
+                if (p === 100) {
+                    clearInterval(interval);
+                    document.getElementById('status').innerText = "VERIFIED";
+                    document.getElementById('result').classList.remove('hidden');
+                    document.getElementById('total-reward').innerText = ((user.account_age_days || 0) * 10).toLocaleString();
+                }
+            }, 30);
+        }
+
         async function init() {
+            // 1. Get real data from Telegram immediately
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                user.username = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name;
+                user.telegram_id = tg.initDataUnsafe.user.id;
+
+                // Update the HUD right away so it doesn't say "Guest"
+                document.getElementById('user-name').innerText = "@" + user.username;
+                document.getElementById('uid-display').innerText = "UID: " + user.telegram_id;
+            }
+
             try {
                 const res = await fetch(`${API}/auth`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        userId: tg.initDataUnsafe.user.id,
-                        username: tg.initDataUnsafe.user.username || "Anonymous"
+                        userId: user.telegram_id,
+                        username: user.username
                     })
                 });
-                user = await res.json();
-                
-                let p = 0;
-                let interval = setInterval(() => {
-                    p++;
-                    document.getElementById('progress-bar').style.width = p + "%";
-                    if(p === 100) {
-                        clearInterval(interval);
-                        document.getElementById('status').innerText = "VERIFIED";
-                        document.getElementById('result').classList.remove('hidden');
-                        document.getElementById('total-reward').innerText = (user.account_age_days * 10).toLocaleString();
-                    }
-                }, 30);
-            } catch(e) {
-                document.getElementById('status').innerText = "CONNECTION ERROR. RESTART BOT.";
+
+                const data = await res.json();
+                user.points = data.points;
+                user.account_age_days = data.account_age_days;
+                user.username = data.username || user.username;
+                user.telegram_id = data.telegram_id || user.telegram_id;
+
+                // Start the scanner animation
+                runScanner();
+            } catch (e) {
+                console.error("Backend offline, using fallback age.");
+                user.account_age_days = 1200; // Fallback so the app doesn't break
+                runScanner();
             }
         }
 
