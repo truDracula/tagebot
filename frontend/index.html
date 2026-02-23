@@ -16,10 +16,10 @@
 </head>
 <body class="p-6">
     <div id="startup" class="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-10 text-center">
-        <h1 class="text-5xl font-black italic mb-4 tracking-tighter">$TAGE</h1>
+        <h1 class="text-5xl font-black italic mb-4 tracking-tighter italic">$TAGE</h1>
         <div id="scanner-ui">
             <p id="status" class="text-blue-500 font-bold uppercase text-[10px] tracking-[0.3em]">Analyzing Metadata...</p>
-            <div class="w-64 bg-zinc-900 h-1.5 mt-6 overflow-hidden rounded-full">
+            <div class="w-64 bg-zinc-900 h-1.5 mt-6 overflow-hidden rounded-full mx-auto">
                 <div id="progress-bar" class="bg-blue-600 h-full w-0 transition-all duration-300"></div>
             </div>
             <div id="result" class="mt-8 hidden">
@@ -51,7 +51,7 @@
             <div class="glass p-6 rounded-[2.5rem] text-center">
                 <h3 class="font-black italic text-lg mb-2 uppercase">Invite Friends</h3>
                 <p class="text-gray-500 text-[10px] mb-6 uppercase font-bold tracking-widest">Earn 20% of their rewards</p>
-                <button onclick="inviteFriends()" class="w-full bg-zinc-900 py-4 rounded-2xl font-black italic border border-white/10 uppercase">Share link</button>
+                <button onclick="inviteFriends()" class="w-full bg-zinc-900 py-4 rounded-2xl font-black italic border border-white/10 uppercase">Share Link</button>
             </div>
         </div>
 
@@ -93,11 +93,9 @@
             { id: 3, title: "Partner Channel Join", reward: 2500, type: "partner", done: false }
         ];
 
-        // VIEW CONTROLLER
         function showView(name) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
             document.getElementById('view-' + name).classList.remove('hidden');
-            
             document.querySelectorAll('[id^="nav-"]').forEach(n => n.classList.remove('nav-active'));
             document.getElementById('nav-' + name).classList.add('nav-active');
 
@@ -105,7 +103,6 @@
             if(name === 'leaderboard') renderLB('points');
         }
 
-        // TASK LOGIC
         function switchTaskTab(category) {
             document.querySelectorAll('.task-tab-btn').forEach(b => b.classList.remove('bg-blue-600'));
             if(category === 'today') document.getElementById('tab-today').classList.add('bg-blue-600');
@@ -113,23 +110,16 @@
             if(category === 'completed') document.getElementById('tab-done').classList.add('bg-blue-600');
 
             const list = document.getElementById('task-list');
-            const filtered = tasks.filter(t => {
-                if(category === 'completed') return t.done;
-                return t.type === category && !t.done;
-            });
+            const filtered = tasks.filter(t => category === 'completed' ? t.done : (t.type === category && !t.done));
 
             list.innerHTML = filtered.map(t => `
-                <div class="glass p-4 rounded-2xl flex justify-between items-center">
-                    <div>
-                        <p class="text-xs font-bold uppercase italic">${t.title}</p>
-                        <p class="text-blue-500 font-black text-[10px]">+${t.reward.toLocaleString()}</p>
-                    </div>
+                <div class="glass p-4 rounded-2xl flex justify-between items-center border border-white/5">
+                    <div><p class="text-xs font-bold uppercase italic">${t.title}</p><p class="text-blue-500 font-black text-[10px]">+${t.reward.toLocaleString()}</p></div>
                     <button class="bg-blue-600 text-[9px] px-4 py-1 rounded-lg font-black uppercase">Go</button>
                 </div>
-            `).join('') || '<p class="text-center text-gray-500 py-10 text-[10px] font-bold uppercase">All caught up!</p>';
+            `).join('') || '<p class="text-center text-gray-500 py-10 text-[10px] font-bold uppercase">No tasks here!</p>';
         }
 
-        // RANK LOGIC
         function renderLB(type) {
             document.getElementById('lb-pts-btn').classList.toggle('bg-blue-600', type === 'points');
             document.getElementById('lb-age-btn').classList.toggle('bg-blue-600', type === 'age');
@@ -142,17 +132,16 @@
 
             const sorted = mockData.sort((a, b) => type === 'age' ? b.days - a.days : b.bal - a.bal);
             document.getElementById('lb-list').innerHTML = sorted.map((p, i) => `
-                <div class="flex justify-between items-center p-4 rounded-2xl bg-zinc-900/40">
+                <div class="flex justify-between items-center p-4 rounded-2xl bg-zinc-900/40 border border-white/5">
                     <div class="flex items-center gap-4">
                         <span class="text-[10px] font-black text-gray-800 italic">#${i+1}</span>
-                        <div><p class="text-sm font-bold italic">${p.name}</p>${type === 'age' ? `<p class="text-[8px] text-blue-400 font-bold">${p.days} DAYS</p>` : ''}</div>
+                        <div><p class="text-sm font-bold italic">${p.name}</p>${type === 'age' ? `<p class="text-[8px] text-blue-400 font-bold tracking-tighter">${p.days} DAYS OLD</p>` : ''}</div>
                     </div>
-                    <span class="font-black text-blue-500 text-sm">${p.bal.toLocaleString()}</span>
+                    <span class="font-black text-blue-500 text-sm italic">${p.bal.toLocaleString()}</span>
                 </div>
             `).join('');
         }
 
-        // INIT SYSTEM
         async function init() {
             try {
                 const res = await fetch(`${API}/auth`, {
@@ -165,7 +154,6 @@
                 });
                 user = await res.json();
                 
-                // Scanner animation
                 let p = 0;
                 let interval = setInterval(() => {
                     p++;
@@ -178,7 +166,7 @@
                     }
                 }, 30);
             } catch(e) {
-                document.getElementById('status').innerText = "CONNECTION ERROR. CHECK BACKEND.";
+                document.getElementById('status').innerText = "CONNECTION ERROR. RESTART BOT.";
             }
         }
 
