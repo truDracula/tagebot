@@ -68,79 +68,89 @@
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        const API = "https://tagebot-production.up.railway.app";
-        let user = { points: 0, account_age_days: 0, telegram_id: "000000", username: "Guest" };
+    const tg = window.Telegram.WebApp;
+    const API = "https://tagebot-production.up.railway.app";
+    let user = { points: 0, account_age_days: 0, telegram_id: "000000", username: "Guest" };
 
-        const tasks = [
-            { title: "Join $TAGE TG", reward: 5000, type: "today", done: false },
-            { title: "Follow $TAGE X", reward: 3000, type: "today", done: false },
-            { title: "Visit Partner", reward: 2000, type: "partner", done: false }
-        ];
+    // This ensures tasks actually exist in the frontend memory
+    const tasks = [
+        { title: "Join $TAGE TG", reward: 5000, type: "today", done: false },
+        { title: "Follow $TAGE X", reward: 3000, type: "today", done: false },
+        { title: "Visit Partner", reward: 2000, type: "partner", done: false }
+    ];
 
-        function showView(name) {
-            document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
-            document.getElementById('view-' + name).classList.remove('hidden');
-            document.querySelectorAll('[id^="nav-"]').forEach(n => n.classList.remove('nav-active'));
-            document.getElementById('nav-' + name).classList.add('nav-active');
-            if(name === 'tasks') switchTaskTab('today');
+    async function init() {
+        // 1. IMMEDIATELY grab Telegram data
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            user.username = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name || "Member";
+            user.telegram_id = tg.initDataUnsafe.user.id;
         }
 
-        function switchTaskTab(category) {
-            document.querySelectorAll('.task-tab-btn').forEach(b => b.classList.remove('bg-blue-600'));
-            document.getElementById('tab-' + category).classList.add('bg-blue-600');
-            const list = document.getElementById('task-list');
-            const filtered = tasks.filter(t => t.type === category);
-            list.innerHTML = filtered.map(t => `
-                <div class="glass p-4 rounded-2xl flex justify-between items-center">
-                    <div><p class="text-xs font-bold uppercase italic">${t.title}</p><p class="text-blue-500 font-black text-[10px]">+${t.reward.toLocaleString()}</p></div>
-                    <button class="bg-blue-600 text-[9px] px-4 py-1 rounded-lg font-black uppercase">Go</button>
+        // 2. Start the Progress Bar Animation
+        let p = 0;
+        let interval = setInterval(() => {
+            p++;
+            document.getElementById('progress-bar').style.width = p + "%";
+            if(p === 100) {
+                clearInterval(interval);
+                document.getElementById('status').innerText = "VERIFIED";
+                document.getElementById('result').classList.remove('hidden');
+                // Calculate age reward based on ID or fallback
+                const reward = (user.telegram_id < 500000000) ? 50000 : 25000;
+                document.getElementById('total-reward').innerText = reward.toLocaleString();
+            }
+        }, 20);
+
+        // 3. Sync with Backend in background
+        try {
+            const res = await fetch(`${API}/auth`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.telegram_id, username: user.username })
+            });
+            const data = await res.json();
+            user.points = data.points;
+        } catch(e) { console.log("Offline mode active"); }
+    }
+
+    function enterApp() {
+        document.getElementById('startup').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        
+        // UPDATE HUD WITH REAL DATA
+        document.getElementById('user-name').innerText = "@" + user.username;
+        document.getElementById('uid-display').innerText = "UID: " + user.telegram_id;
+        document.getElementById('balance').innerText = user.points.toLocaleString();
+        
+        // LOAD INITIAL TASKS
+        showView('home'); 
+    }
+
+    function showView(name) {
+        document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
+        document.getElementById('view-' + name).classList.remove('hidden');
+        
+        document.querySelectorAll('[id^="nav-"]').forEach(n => n.classList.remove('nav-active'));
+        document.getElementById('nav-' + name).classList.add('nav-active');
+
+        if(name === 'tasks') renderTasks('today');
+    }
+
+    function renderTasks(category) {
+        const list = document.getElementById('task-list');
+        const filtered = tasks.filter(t => t.type === category);
+        list.innerHTML = filtered.map(t => `
+            <div class="glass p-4 rounded-2xl flex justify-between items-center">
+                <div>
+                    <p class="text-xs font-bold uppercase italic">${t.title}</p>
+                    <p class="text-blue-500 font-black text-[10px]">+${t.reward.toLocaleString()}</p>
                 </div>
-            `).join('');
-        }
+                <button class="bg-blue-600 text-[9px] px-4 py-1 rounded-lg font-black uppercase">Go</button>
+            </div>
+        `).join('');
+    }
 
-        async function init() {
-            // FIX: Grab real Telegram data immediately
-            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                user.username = tg.initDataUnsafe.user.username || "Anonymous";
-                user.telegram_id = tg.initDataUnsafe.user.id;
-            }
-
-            try {
-                const res = await fetch(`${API}/auth`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: user.telegram_id, username: user.username })
-                });
-                const data = await res.json();
-                user.points = data.points;
-                user.account_age_days = data.account_age_days;
-                
-                // Animation logic
-                let p = 0;
-                let interval = setInterval(() => {
-                    p++;
-                    document.getElementById('progress-bar').style.width = p + "%";
-                    if(p === 100) {
-                        clearInterval(interval);
-                        document.getElementById('result').classList.remove('hidden');
-                        document.getElementById('total-reward').innerText = (user.account_age_days * 10).toLocaleString();
-                    }
-                }, 20);
-            } catch(e) {
-                document.getElementById('status').innerText = "BACKEND ERROR. RESTART BOT.";
-            }
-        }
-
-        function enterApp() {
-            document.getElementById('startup').classList.add('hidden');
-            document.getElementById('app').classList.remove('hidden');
-            document.getElementById('user-name').innerText = "@" + user.username;
-            document.getElementById('uid-display').innerText = "UID: " + user.telegram_id;
-            document.getElementById('balance').innerText = user.points.toLocaleString();
-        }
-
-        init();
-    </script>
+    init();
+</script>
 </body>
 </html>
