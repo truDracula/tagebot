@@ -16,10 +16,22 @@
 </head>
 <body class="p-6">
     <div id="startup" class="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-10">
-        <h1 class="text-5xl font-black italic mb-4 tracking-tighter">$TAGE</h1>
-        <p id="status" class="text-blue-500 font-bold uppercase text-[10px] tracking-[0.3em]">Verifying Account Age...</p>
-        <div class="w-full max-w-xs bg-zinc-900 h-1 mt-6 overflow-hidden">
-            <div class="bg-blue-600 h-full animate-scan"></div>
+        <div id="welcome" class="w-full max-w-xs text-center">
+            <h1 class="text-5xl font-black italic mb-4 tracking-tighter">$TAGE</h1>
+            <p class="text-blue-500 font-bold uppercase text-[10px] tracking-[0.3em]">Preparing Scanner...</p>
+        </div>
+        <div id="scanner" class="w-full max-w-xs text-center hidden">
+            <h1 class="text-5xl font-black italic mb-4 tracking-tighter">$TAGE</h1>
+            <p id="status" class="text-blue-500 font-bold uppercase text-[10px] tracking-[0.3em]">Verifying Account Age...</p>
+            <div class="w-full bg-zinc-900 h-2 mt-6 overflow-hidden rounded-full">
+                <div id="progress-bar" class="bg-blue-600 h-full w-0 transition-all"></div>
+            </div>
+            <p id="progress-text" class="mt-3 text-xs font-black text-blue-500">0%</p>
+            <div id="result" class="mt-8 hidden">
+                <p id="age-days" class="text-blue-500 font-black italic text-xs mb-2 tracking-widest uppercase"></p>
+                <h2 id="total-reward" class="text-6xl font-black italic mb-6 tracking-tighter">0</h2>
+                <button onclick="enterApp()" class="w-full bg-white text-black py-4 rounded-2xl font-black italic active:scale-95 transition-all">ENTER APP</button>
+            </div>
         </div>
     </div>
 
@@ -65,9 +77,91 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        // REPLACE THIS with your Railway link from Step 2
         const API = "https://tagebot-production.up.railway.app";
         let user = {};
+        const userData = { balance: 0 };
+
+        // --- 1. THE DATASET (ID milestones to estimate date) ---
+        const milestones = [
+            { id: 0, date: new Date('2013-08-14') },
+            { id: 200000000, date: new Date('2016-01-01') },
+            { id: 1000000000, date: new Date('2020-01-01') },
+            { id: 5000000000, date: new Date('2022-01-01') },
+            { id: 6500000000, date: new Date('2024-01-01') },
+            { id: 8000000000, date: new Date() } // Today
+        ];
+
+        function calculateAccountAge(userId) {
+            let joinDate = milestones[0].date;
+
+            for (let i = 0; i < milestones.length - 1; i++) {
+                if (userId >= milestones[i].id && userId <= milestones[i + 1].id) {
+                    const ratio = (userId - milestones[i].id) / (milestones[i + 1].id - milestones[i].id);
+                    const timeDiff = milestones[i + 1].date - milestones[i].date;
+                    joinDate = new Date(milestones[i].date.getTime() + (ratio * timeDiff));
+                    break;
+                }
+            }
+
+            const today = new Date();
+            const diffTime = Math.abs(today - joinDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
+        }
+
+        function animateNumber(id, start, end, duration) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const startTime = performance.now();
+
+            function tick(now) {
+                const progress = Math.min((now - startTime) / duration, 1);
+                const value = Math.floor(start + (end - start) * progress);
+                el.innerText = value.toLocaleString();
+                if (progress < 1) requestAnimationFrame(tick);
+            }
+
+            requestAnimationFrame(tick);
+        }
+
+        // --- 2. UPDATED START SCANNING ---
+        function startScanning() {
+            const welcome = document.getElementById('welcome');
+            const scanner = document.getElementById('scanner');
+            if (welcome) welcome.classList.add('hidden');
+            if (scanner) scanner.classList.remove('hidden');
+
+            const safeUserId = user.telegram_id || (tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 550000000);
+            const actualDays = calculateAccountAge(safeUserId);
+            const rewardPerDay = 10;
+            const totalReward = actualDays * rewardPerDay;
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress++;
+                document.getElementById('progress-bar').style.width = progress + '%';
+                document.getElementById('progress-text').innerText = progress + '%';
+
+                if (progress === 100) {
+                    clearInterval(interval);
+                    showResult(totalReward, actualDays);
+                }
+            }, 40);
+        }
+
+        function showResult(reward, days) {
+            document.getElementById('status').innerText = "ACCOUNT VERIFIED";
+            document.getElementById('result').classList.remove('hidden');
+            document.getElementById('age-days').innerText = days + " DAYS ON TELEGRAM";
+            animateNumber('total-reward', 0, reward, 1500);
+            userData.balance = reward;
+        }
+
+        function enterApp() {
+            document.getElementById('startup').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            updateUI();
+        }
 
         async function init() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -76,35 +170,30 @@
             try {
                 const res = await fetch(`${API}/auth`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         userId: tg.initDataUnsafe.user.id,
                         username: tg.initDataUnsafe.user.username,
-                        refBy: refBy
+                        refBy
                     })
                 });
                 user = await res.json();
-                
-                // Show claim box only when backend explicitly says it is unclaimed
+
                 if (user.has_claimed_age === false) {
                     document.getElementById('age-box').classList.remove('hidden');
                     document.getElementById('age-bonus-text').innerText = (user.account_age_days * 10).toLocaleString();
                 }
 
-                setTimeout(() => {
-                    document.getElementById('startup').classList.add('hidden');
-                    document.getElementById('app').classList.remove('hidden');
-                    updateUI();
-                }, 2500);
+                startScanning();
             } catch (e) {
                 document.getElementById('status').innerText = "CONNECTION ERROR. CHECK BACKEND.";
             }
         }
 
         function updateUI() {
-            document.getElementById('balance').innerText = user.points.toLocaleString();
-            document.getElementById('user-name').innerText = "@" + user.username;
-            document.getElementById('uid-display').innerText = "UID: " + user.telegram_id;
+            document.getElementById('balance').innerText = (user.points || 0).toLocaleString();
+            document.getElementById('user-name').innerText = "@" + (user.username || "Guest");
+            document.getElementById('uid-display').innerText = "UID: " + (user.telegram_id || "000000");
             const left = 10 - (user.daily_ads_watched || 0);
             document.getElementById('ads-left').innerText = left;
             if (left <= 0) {
@@ -115,10 +204,9 @@
         }
 
         async function watchAd() {
-            // This calls your Railway /watch-ad route
             const res = await fetch(`${API}/watch-ad`, {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: user.telegram_id })
             });
             user = await res.json();
@@ -135,19 +223,17 @@
             try {
                 const res = await fetch(`${API}/claim-age-reward`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId: user.telegram_id })
                 });
 
                 if (res.ok) {
-                    const updatedUser = await res.json();
-                    user = updatedUser;
+                    user = await res.json();
                     updateUI();
                     document.getElementById('age-box').classList.add('hidden');
                     return;
                 }
 
-                // Fallback for backends that award age points at signup and don't expose claim endpoint
                 if (res.status === 404 || res.status === 405) {
                     user.has_claimed_age = true;
                     document.getElementById('age-box').classList.add('hidden');
