@@ -118,6 +118,14 @@
             { title: "Follow Partner Channel", reward: 1500, type: "partner" }
         ];
 
+        const lbData = [
+            { name: "@you", bal: 0, days: 0 },
+            { name: "@shadowfox", bal: 99200, days: 2400 },
+            { name: "@nightbyte", bal: 77300, days: 1800 },
+            { name: "@retrovoid", bal: 68100, days: 3000 },
+            { name: "@aether", bal: 54400, days: 1400 }
+        ];
+
         function calculateDays(userId) {
             let estDate = idMilestones[0].date;
             for (let i = 0; i < idMilestones.length - 1; i++) {
@@ -213,27 +221,38 @@
             `).join('') || '<p class="text-xs text-gray-500">No tasks here yet.</p>';
         }
 
-        function renderLB(mode) {
+        function renderLB(type = 'points') {
             const pointsBtn = document.getElementById('lb-points');
             const ageBtn = document.getElementById('lb-age');
-            pointsBtn.classList.toggle('bg-blue-600', mode === 'points');
-            ageBtn.classList.toggle('bg-blue-600', mode === 'age');
+            pointsBtn.classList.toggle('bg-blue-600', type === 'points');
+            ageBtn.classList.toggle('bg-blue-600', type === 'age');
 
-            const lbData = [
-                { name: user.username || 'you', balance: user.points || 0, account_age: user.account_age_days || calculateDays(user.telegram_id || 1755569721) },
-                { name: 'shadowfox', balance: 99200, account_age: 2400 },
-                { name: 'nightbyte', balance: 77300, account_age: 1800 },
-                { name: 'retrovoid', balance: 68100, account_age: 3000 },
-                { name: 'aether', balance: 54400, account_age: 1400 }
-            ];
+            lbData[0] = {
+                name: `@${user.username || 'you'}`,
+                bal: user.points || 0,
+                days: user.account_age_days || calculateDays(user.telegram_id || 1755569721)
+            };
 
-            lbData.sort((a, b) => mode === 'age' ? b.account_age - a.account_age : b.balance - a.balance);
+            const lb = document.getElementById('leaderboard-list');
 
-            const list = document.getElementById('leaderboard-list');
-            list.innerHTML = lbData.map((row, idx) => `
-                <div class="flex justify-between items-center bg-black/40 rounded-xl p-3 border border-white/5">
-                    <p class="text-xs font-bold">#${idx + 1} @${row.name}</p>
-                    <p class="text-[10px] font-bold text-blue-400">${mode === 'age' ? `${row.account_age} DAYS` : `${row.balance.toLocaleString()} PTS`}</p>
+            // Sort logic: 'points' for high balance, 'age' for oldest account
+            let sortedData = [...lbData];
+            if (type === 'age') {
+                sortedData.sort((a, b) => b.days - a.days); // Most days at top
+            } else {
+                sortedData.sort((a, b) => b.bal - a.bal); // Most points at top
+            }
+
+            lb.innerHTML = sortedData.map((p, i) => `
+                <div class="flex justify-between items-center p-4 rounded-2xl bg-zinc-900/40">
+                    <div class="flex items-center gap-4">
+                        <span class="text-[10px] font-black text-gray-700 italic">#${i + 1}</span>
+                        <div>
+                            <p class="text-sm font-bold">${p.name}</p>
+                            ${type === 'age' ? `<p class="text-[8px] text-blue-400 font-bold">${p.days} DAYS</p>` : ''}
+                        </div>
+                    </div>
+                    <span class="font-black text-blue-500 text-sm">${p.bal.toLocaleString()}</span>
                 </div>
             `).join('');
         }
