@@ -15,16 +15,16 @@
     </style>
 </head>
 <body class="p-6">
-    <div id="startup" class="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-10">
+    <div id="startup" class="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-10 text-center">
         <h1 class="text-5xl font-black italic mb-4 tracking-tighter">$TAGE</h1>
-        <div id="scanner" class="w-full max-w-xs text-center">
-            <p id="status" class="text-blue-500 font-bold uppercase text-[10px] tracking-[0.3em]">Verifying Account Age...</p>
-            <div class="w-full bg-zinc-900 h-2 mt-6 overflow-hidden rounded-full">
-                <div id="progress-bar" class="bg-blue-600 h-full w-0 transition-all"></div>
+        <div id="scanner-ui">
+            <p id="status" class="text-blue-500 font-bold uppercase text-[10px] tracking-[0.3em]">Analyzing Metadata...</p>
+            <div class="w-64 bg-zinc-900 h-1.5 mt-6 overflow-hidden rounded-full">
+                <div id="progress-bar" class="bg-blue-600 h-full w-0 transition-all duration-300"></div>
             </div>
             <div id="result" class="mt-8 hidden">
                 <h2 id="total-reward" class="text-6xl font-black italic mb-6">0</h2>
-                <button onclick="enterApp()" class="w-full bg-white text-black py-4 rounded-2xl font-black italic uppercase">Claim Drop</button>
+                <button onclick="enterApp()" class="w-full bg-white text-black py-4 rounded-2xl font-black italic uppercase">Claim & Enter</button>
             </div>
         </div>
     </div>
@@ -33,7 +33,7 @@
         <div class="flex justify-between items-center mb-8 sticky top-0 bg-black/90 py-4 z-40 backdrop-blur-md">
             <div>
                 <p id="user-name" class="font-black italic text-lg">@Guest</p>
-                <p id="uid-display" class="text-[10px] text-gray-600 font-bold uppercase">UID: 000000</p>
+                <p id="uid-display" class="text-[10px] text-gray-600 font-bold uppercase tracking-widest">UID: 000000</p>
             </div>
             <div class="glass px-5 py-2 rounded-2xl border-blue-500/20">
                 <span id="balance" class="text-blue-500 font-black text-xl">0</span>
@@ -42,19 +42,24 @@
 
         <div id="view-home" class="view-section">
             <div class="glass p-6 rounded-[2.5rem] border border-blue-500/20 mb-8">
-                <h3 class="font-black italic text-lg uppercase mb-4">Daily Video</h3>
-                <button onclick="watchAd()" id="ad-btn" class="w-full bg-blue-600 py-4 rounded-2xl font-black italic active:scale-95 transition-all">WATCH & EARN +1,000</button>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-black italic text-lg uppercase">Daily Video</h3>
+                    <span id="ads-left" class="text-blue-500 font-black">10 Left</span>
+                </div>
+                <button onclick="watchAd()" class="w-full bg-blue-600 py-4 rounded-2xl font-black italic active:scale-95 transition-all">WATCH & EARN +1,000</button>
             </div>
             <div class="glass p-6 rounded-[2.5rem] text-center">
                 <h3 class="font-black italic text-lg mb-2 uppercase">Invite Friends</h3>
-                <button onclick="inviteFriends()" class="w-full bg-zinc-900 py-4 rounded-2xl font-black italic border border-white/10">SHARE LINK (20%)</button>
+                <p class="text-gray-500 text-[10px] mb-6 uppercase font-bold tracking-widest">Earn 20% of their rewards</p>
+                <button onclick="inviteFriends()" class="w-full bg-zinc-900 py-4 rounded-2xl font-black italic border border-white/10 uppercase">Share link</button>
             </div>
         </div>
 
         <div id="view-tasks" class="view-section hidden">
             <div class="flex gap-2 mb-6 bg-zinc-900/50 p-1 rounded-2xl">
-                <button onclick="switchTaskTab('today')" class="task-tab-btn flex-1 py-3 text-[10px] font-black rounded-xl bg-blue-600">TODAY</button>
-                <button onclick="switchTaskTab('partner')" class="task-tab-btn flex-1 py-3 text-[10px] font-black rounded-xl">PARTNERS</button>
+                <button onclick="switchTaskTab('today')" id="tab-today" class="task-tab-btn flex-1 py-3 text-[10px] font-black rounded-xl bg-blue-600 uppercase">Today</button>
+                <button onclick="switchTaskTab('partner')" id="tab-partner" class="task-tab-btn flex-1 py-3 text-[10px] font-black rounded-xl uppercase">Partners</button>
+                <button onclick="switchTaskTab('completed')" id="tab-done" class="task-tab-btn flex-1 py-3 text-[10px] font-black rounded-xl uppercase">Done</button>
             </div>
             <div id="task-list" class="space-y-3"></div>
         </div>
@@ -62,7 +67,10 @@
         <div id="view-leaderboard" class="view-section hidden">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="font-black italic text-xl uppercase text-blue-500">Rankings</h3>
-                <button onclick="toggleRankSort()" id="rank-sort-btn" class="text-[8px] font-bold px-3 py-1 rounded-lg bg-zinc-900 uppercase">Old School</button>
+                <div class="flex gap-1 bg-zinc-900/50 p-1 rounded-xl">
+                    <button onclick="renderLB('points')" id="lb-pts-btn" class="text-[8px] font-bold px-3 py-1 rounded-lg bg-blue-600 uppercase">Points</button>
+                    <button onclick="renderLB('age')" id="lb-age-btn" class="text-[8px] font-bold px-3 py-1 rounded-lg uppercase">Old School</button>
+                </div>
             </div>
             <div id="lb-list" class="space-y-3"></div>
         </div>
@@ -76,39 +84,113 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        let user = { points: 0, account_age_days: 1200 }; // Default values
+        const API = "https://tagebot-production.up.railway.app";
+        let user = { points: 0, account_age_days: 0, telegram_id: "000000", username: "Guest" };
 
+        const tasks = [
+            { id: 1, title: "Join $TAGE Channel", reward: 5000, type: "today", done: false },
+            { id: 2, title: "Follow $TAGE on X", reward: 3000, type: "today", done: false },
+            { id: 3, title: "Partner Channel Join", reward: 2500, type: "partner", done: false }
+        ];
+
+        // VIEW CONTROLLER
         function showView(name) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
             document.getElementById('view-' + name).classList.remove('hidden');
             
             document.querySelectorAll('[id^="nav-"]').forEach(n => n.classList.remove('nav-active'));
             document.getElementById('nav-' + name).classList.add('nav-active');
-            
-            if(name === 'tasks') renderTasks('today');
+
+            if(name === 'tasks') switchTaskTab('today');
             if(name === 'leaderboard') renderLB('points');
+        }
+
+        // TASK LOGIC
+        function switchTaskTab(category) {
+            document.querySelectorAll('.task-tab-btn').forEach(b => b.classList.remove('bg-blue-600'));
+            if(category === 'today') document.getElementById('tab-today').classList.add('bg-blue-600');
+            if(category === 'partner') document.getElementById('tab-partner').classList.add('bg-blue-600');
+            if(category === 'completed') document.getElementById('tab-done').classList.add('bg-blue-600');
+
+            const list = document.getElementById('task-list');
+            const filtered = tasks.filter(t => {
+                if(category === 'completed') return t.done;
+                return t.type === category && !t.done;
+            });
+
+            list.innerHTML = filtered.map(t => `
+                <div class="glass p-4 rounded-2xl flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold uppercase italic">${t.title}</p>
+                        <p class="text-blue-500 font-black text-[10px]">+${t.reward.toLocaleString()}</p>
+                    </div>
+                    <button class="bg-blue-600 text-[9px] px-4 py-1 rounded-lg font-black uppercase">Go</button>
+                </div>
+            `).join('') || '<p class="text-center text-gray-500 py-10 text-[10px] font-bold uppercase">All caught up!</p>';
+        }
+
+        // RANK LOGIC
+        function renderLB(type) {
+            document.getElementById('lb-pts-btn').classList.toggle('bg-blue-600', type === 'points');
+            document.getElementById('lb-age-btn').classList.toggle('bg-blue-600', type === 'age');
+
+            const mockData = [
+                { name: "@Whale_Admin", bal: 2500000, days: 3200 },
+                { name: "@CryptoKing", bal: 1200000, days: 1500 },
+                { name: user.username, bal: user.points, days: user.account_age_days }
+            ];
+
+            const sorted = mockData.sort((a, b) => type === 'age' ? b.days - a.days : b.bal - a.bal);
+            document.getElementById('lb-list').innerHTML = sorted.map((p, i) => `
+                <div class="flex justify-between items-center p-4 rounded-2xl bg-zinc-900/40">
+                    <div class="flex items-center gap-4">
+                        <span class="text-[10px] font-black text-gray-800 italic">#${i+1}</span>
+                        <div><p class="text-sm font-bold italic">${p.name}</p>${type === 'age' ? `<p class="text-[8px] text-blue-400 font-bold">${p.days} DAYS</p>` : ''}</div>
+                    </div>
+                    <span class="font-black text-blue-500 text-sm">${p.bal.toLocaleString()}</span>
+                </div>
+            `).join('');
+        }
+
+        // INIT SYSTEM
+        async function init() {
+            try {
+                const res = await fetch(`${API}/auth`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: tg.initDataUnsafe.user.id,
+                        username: tg.initDataUnsafe.user.username || "Anonymous"
+                    })
+                });
+                user = await res.json();
+                
+                // Scanner animation
+                let p = 0;
+                let interval = setInterval(() => {
+                    p++;
+                    document.getElementById('progress-bar').style.width = p + "%";
+                    if(p === 100) {
+                        clearInterval(interval);
+                        document.getElementById('status').innerText = "VERIFIED";
+                        document.getElementById('result').classList.remove('hidden');
+                        document.getElementById('total-reward').innerText = (user.account_age_days * 10).toLocaleString();
+                    }
+                }, 30);
+            } catch(e) {
+                document.getElementById('status').innerText = "CONNECTION ERROR. CHECK BACKEND.";
+            }
         }
 
         function enterApp() {
             document.getElementById('startup').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
-            document.getElementById('balance').innerText = (user.account_age_days * 10).toLocaleString();
+            document.getElementById('balance').innerText = user.points.toLocaleString();
+            document.getElementById('user-name').innerText = "@" + user.username;
+            document.getElementById('uid-display').innerText = "UID: " + user.telegram_id;
         }
 
-        // Logic for Task rendering and Leaderboard sorting goes here...
-        // (Similar to your test3.html logic but tied to the new showView system)
-
-        // Run Scanner
-        let p = 0;
-        let int = setInterval(() => {
-            p++;
-            document.getElementById('progress-bar').style.width = p + "%";
-            if(p === 100) {
-                clearInterval(int);
-                document.getElementById('result').classList.remove('hidden');
-                document.getElementById('total-reward').innerText = (user.account_age_days * 10).toLocaleString();
-            }
-        }, 30);
+        init();
     </script>
 </body>
 </html>
