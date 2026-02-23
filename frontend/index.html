@@ -73,6 +73,26 @@
             <p class="text-gray-500 text-xs mb-6 uppercase tracking-widest">Earn 20% from their activity</p>
             <button onclick="inviteFriends()" class="w-full bg-zinc-900 py-4 rounded-2xl font-black italic border border-white/10 active:scale-95 transition-all">SHARE INVITE LINK</button>
         </div>
+
+        <div class="glass p-4 rounded-[2rem] mt-6">
+            <div class="flex gap-2 mb-4 bg-black/40 p-1 rounded-xl">
+                <button onclick="switchTask('today')" class="task-tab flex-1 py-2 text-[10px] font-black italic rounded-lg bg-blue-600">TODAY</button>
+                <button onclick="switchTask('completed')" class="task-tab flex-1 py-2 text-[10px] font-black italic rounded-lg">COMPLETED</button>
+                <button onclick="switchTask('partner')" class="task-tab flex-1 py-2 text-[10px] font-black italic rounded-lg">PARTNERS</button>
+            </div>
+            <div id="task-list" class="space-y-3"></div>
+        </div>
+
+        <div class="glass p-6 rounded-[2.5rem] mt-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-black italic text-xl">RANKINGS</h3>
+                <div class="flex gap-2">
+                    <button onclick="renderLB('points')" id="lb-points" class="text-[8px] font-bold border border-white/10 px-3 py-1 rounded-full bg-blue-600">POINTS</button>
+                    <button onclick="renderLB('age')" id="lb-age" class="text-[8px] font-bold border border-white/10 px-3 py-1 rounded-full">OLD SCHOOL</button>
+                </div>
+            </div>
+            <div id="leaderboard-list" class="space-y-3"></div>
+        </div>
     </div>
 
     <script>
@@ -81,32 +101,34 @@
         let user = {};
         const userData = { balance: 0 };
 
-        // --- 1. THE DATASET (ID milestones to estimate date) ---
-        const milestones = [
+        // Dataset to map ID ranges to years
+        const idMilestones = [
             { id: 0, date: new Date('2013-08-14') },
             { id: 200000000, date: new Date('2016-01-01') },
             { id: 1000000000, date: new Date('2020-01-01') },
             { id: 5000000000, date: new Date('2022-01-01') },
             { id: 6500000000, date: new Date('2024-01-01') },
-            { id: 8000000000, date: new Date() } // Today
+            { id: 8500000000, date: new Date() }
         ];
 
-        function calculateAccountAge(userId) {
-            let joinDate = milestones[0].date;
+        const tasks = [
+            { title: "Watch 10 videos", reward: 10000, type: "today" },
+            { title: "Invite 1 friend", reward: 2500, type: "today" },
+            { title: "Age reward claimed", reward: 0, type: "completed" },
+            { title: "Follow Partner Channel", reward: 1500, type: "partner" }
+        ];
 
-            for (let i = 0; i < milestones.length - 1; i++) {
-                if (userId >= milestones[i].id && userId <= milestones[i + 1].id) {
-                    const ratio = (userId - milestones[i].id) / (milestones[i + 1].id - milestones[i].id);
-                    const timeDiff = milestones[i + 1].date - milestones[i].date;
-                    joinDate = new Date(milestones[i].date.getTime() + (ratio * timeDiff));
+        function calculateDays(userId) {
+            let estDate = idMilestones[0].date;
+            for (let i = 0; i < idMilestones.length - 1; i++) {
+                if (userId >= idMilestones[i].id && userId <= idMilestones[i + 1].id) {
+                    const ratio = (userId - idMilestones[i].id) / (idMilestones[i + 1].id - idMilestones[i].id);
+                    const diff = idMilestones[i + 1].date - idMilestones[i].date;
+                    estDate = new Date(idMilestones[i].date.getTime() + (ratio * diff));
                     break;
                 }
             }
-
-            const today = new Date();
-            const diffTime = Math.abs(today - joinDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            return diffDays;
+            return Math.floor((new Date() - estDate) / (1000 * 60 * 60 * 24));
         }
 
         function animateNumber(id, start, end, duration) {
@@ -126,33 +148,40 @@
 
         // --- 2. UPDATED START SCANNING ---
         function startScanning() {
-            const welcome = document.getElementById('welcome');
-            const scanner = document.getElementById('scanner');
-            if (welcome) welcome.classList.add('hidden');
-            if (scanner) scanner.classList.remove('hidden');
+            document.getElementById('welcome').classList.add('hidden');
+            document.getElementById('scanner').classList.remove('hidden');
 
-            const safeUserId = user.telegram_id || (tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 550000000);
-            const actualDays = calculateAccountAge(safeUserId);
-            const rewardPerDay = 10;
-            const totalReward = actualDays * rewardPerDay;
+            // Get real ID from Telegram
+            const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 1755569721;
+            const days = calculateDays(userId);
+            const reward = days * 10; // 10 coins per day
 
             let progress = 0;
             const interval = setInterval(() => {
                 progress++;
                 document.getElementById('progress-bar').style.width = progress + '%';
                 document.getElementById('progress-text').innerText = progress + '%';
-
                 if (progress === 100) {
                     clearInterval(interval);
-                    showResult(totalReward, actualDays);
+                    showResult(reward, days);
                 }
-            }, 40);
+            }, 30);
         }
 
         function showResult(reward, days) {
-            document.getElementById('status').innerText = "ACCOUNT VERIFIED";
-            document.getElementById('result').classList.remove('hidden');
-            document.getElementById('age-days').innerText = days + " DAYS ON TELEGRAM";
+            document.getElementById('status').innerText = "CALCULATION COMPLETE";
+            const result = document.getElementById('result');
+            result.classList.remove('hidden');
+
+            const existingInfo = result.querySelector('.verified-age');
+            if (existingInfo) existingInfo.remove();
+
+            // Show the "Days" info
+            const infoText = document.createElement('p');
+            infoText.className = "verified-age text-blue-400 font-bold text-[10px] mb-2 uppercase";
+            infoText.innerText = `Verified: ${days} days on Telegram`;
+            result.prepend(infoText);
+
             animateNumber('total-reward', 0, reward, 1500);
             userData.balance = reward;
         }
@@ -161,6 +190,52 @@
             document.getElementById('startup').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
             updateUI();
+            switchTask('today');
+            renderLB('points');
+        }
+
+        function switchTask(type) {
+            document.querySelectorAll('.task-tab').forEach((btn) => btn.classList.remove('bg-blue-600'));
+            const tabLabel = type === 'partner' ? 'partners' : type;
+            const selected = Array.from(document.querySelectorAll('.task-tab')).find((btn) => btn.textContent.trim().toLowerCase() === tabLabel);
+            if (selected) selected.classList.add('bg-blue-600');
+
+            const list = document.getElementById('task-list');
+            const filtered = tasks.filter((task) => task.type === type);
+            list.innerHTML = filtered.map((task) => `
+                <div class="flex justify-between items-center bg-black/40 rounded-xl p-3 border border-white/5">
+                    <div>
+                        <p class="text-xs font-bold">${task.title}</p>
+                        <p class="text-[10px] text-blue-400 font-bold">+${task.reward.toLocaleString()} $TAGE</p>
+                    </div>
+                    <button class="text-[9px] px-3 py-1 rounded-full bg-zinc-900 border border-white/10">${type === 'completed' ? 'DONE' : 'GO'}</button>
+                </div>
+            `).join('') || '<p class="text-xs text-gray-500">No tasks here yet.</p>';
+        }
+
+        function renderLB(mode) {
+            const pointsBtn = document.getElementById('lb-points');
+            const ageBtn = document.getElementById('lb-age');
+            pointsBtn.classList.toggle('bg-blue-600', mode === 'points');
+            ageBtn.classList.toggle('bg-blue-600', mode === 'age');
+
+            const lbData = [
+                { name: user.username || 'you', balance: user.points || 0, account_age: user.account_age_days || calculateDays(user.telegram_id || 1755569721) },
+                { name: 'shadowfox', balance: 99200, account_age: 2400 },
+                { name: 'nightbyte', balance: 77300, account_age: 1800 },
+                { name: 'retrovoid', balance: 68100, account_age: 3000 },
+                { name: 'aether', balance: 54400, account_age: 1400 }
+            ];
+
+            lbData.sort((a, b) => mode === 'age' ? b.account_age - a.account_age : b.balance - a.balance);
+
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = lbData.map((row, idx) => `
+                <div class="flex justify-between items-center bg-black/40 rounded-xl p-3 border border-white/5">
+                    <p class="text-xs font-bold">#${idx + 1} @${row.name}</p>
+                    <p class="text-[10px] font-bold text-blue-400">${mode === 'age' ? `${row.account_age} DAYS` : `${row.balance.toLocaleString()} PTS`}</p>
+                </div>
+            `).join('');
         }
 
         async function init() {
