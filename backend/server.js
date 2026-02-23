@@ -10,6 +10,25 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const webAppUrl = process.env.WEB_APP_URL || 'https://tage-bot-frontend.vercel.app';
 
+async function awardReferralBonus(referredBy, reward) {
+    if (!referredBy) return;
+    const bonus = Math.floor(reward * 0.2);
+    if (bonus <= 0) return;
+
+    // Support either RPC signature: user_id or user_id_param.
+    let { error } = await supabase.rpc('increment_points', {
+        user_id: referredBy,
+        amount: bonus
+    });
+
+    if (error) {
+        ({ error } = await supabase.rpc('increment_points', {
+            user_id_param: referredBy,
+            amount: bonus
+        }));
+    }
+}
+
 if (token) {
     const bot = new TelegramBot(token, { polling: true });
 
@@ -80,14 +99,35 @@ app.post('/claim-age-reward', async (req, res) => {
     if (updateError) return res.status(500).json({ error: updateError.message });
 
     // Give 20% to inviter when age reward is claimed
-    if (user.referred_by) {
-        await supabase.rpc('increment_points', {
-            user_id_param: user.referred_by,
-            amount: reward * 0.20
-        });
-    }
+    await awardReferralBonus(user.referred_by, reward);
 
     res.json(updatedUser);
+});
+
+app.get('/leaderboard', async (req, res) => {
+    const { type } = req.query;
+
+    let query = supabase
+        .from('users')
+        .select('username, points')
+        .order('points', { ascending: false })
+        .limit(50);
+
+    const { data, error } = await query;
+    if (error) return res.status(500).json({ error });
+    res.json(data);
+});
+
+app.get('/referrals/:telegram_id', async (req, res) => {
+    const { telegram_id } = req.params;
+
+    const { data, error } = await supabase
+        .from('users')
+        .select('username, points')
+        .eq('referred_by', telegram_id);
+
+    if (error) return res.status(500).json({ error });
+    res.json(data);
 });
 
 // Daily Ad Logic
@@ -100,12 +140,15 @@ app.post('/watch-ad', async (req, res) => {
     
     if ((user.daily_ads_watched || 0) >= 10) return res.status(400).json({ error: 'Limit reached' });
 
+    const reward = 1000;
     const { data, error: updateError } = await supabase.from('users').update({ 
-        points: (user.points || 0) + 1000, 
+        points: (user.points || 0) + reward, 
         daily_ads_watched: (user.daily_ads_watched || 0) + 1 
     }).eq('telegram_id', userId).select().single();
 
     if (updateError) return res.status(500).json({ error: updateError.message });
+
+    await awardReferralBonus(user.referred_by, reward);
     
     res.json(data);
 });
@@ -128,6 +171,8 @@ app.post('/complete-task', async (req, res) => {
     }).eq('telegram_id', userId).select().single();
 
     if (updateError) return res.status(500).json({ error: updateError.message });
+
+    await awardReferralBonus(user.referred_by, reward);
     res.json(data);
 });
 
