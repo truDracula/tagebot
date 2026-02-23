@@ -1,166 +1,217 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>$TAGE</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background-color: #000; color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        .glass { background: rgba(15, 15, 15, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .nav-active { color: #2563eb !important; border-bottom: 2px solid #2563eb; }
-        .hidden { display: none !important; }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>$TAGE | Elite</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body{background:#000;color:#fff;font-family:Inter,sans-serif}
+.glass{background:rgba(15,15,15,.7);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08)}
+.hidden{display:none}
+.nav-active{color:#2563eb;border-top:2px solid #2563eb;padding-top:8px}
+</style>
 </head>
-<body class="p-6">
-    <div id="startup" class="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-10 text-center">
-        <h1 class="text-5xl font-black italic mb-4">$TAGE</h1>
-        <div class="w-64 bg-zinc-900 h-1.5 mt-6 overflow-hidden rounded-full mx-auto">
-            <div id="progress-bar" class="bg-blue-600 h-full w-0 transition-all duration-300"></div>
-        </div>
-        <div id="result" class="mt-8 hidden">
-            <h2 id="total-reward" class="text-6xl font-black italic mb-6">41,850</h2>
-            <button onclick="enterApp()" class="w-full bg-white text-black py-4 rounded-2xl font-black italic uppercase">Claim & Enter</button>
-        </div>
-    </div>
+<body>
 
-    <div id="app" class="hidden pb-32">
-        <div class="flex justify-between items-center mb-8">
-            <div>
-                <p id="user-name" class="font-black italic text-lg">@Loading...</p>
-                <p id="uid-display" class="text-[10px] text-gray-600 font-bold uppercase">UID: 000000</p>
-            </div>
-            <div class="glass px-5 py-2 rounded-2xl"><span id="balance" class="text-blue-500 font-black text-xl">0</span></div>
-        </div>
+<!-- SCANNER -->
+<div id="scanner" class="min-h-screen flex flex-col items-center justify-center">
+<h1 class="text-4xl font-black italic mb-6">$TAGE</h1>
+<p class="text-gray-500 mb-6">Analyzing Telegram seniority...</p>
+<div class="w-64 h-2 bg-zinc-800 rounded-full overflow-hidden">
+<div id="scanbar" class="h-full bg-blue-600 w-0"></div>
+</div>
+</div>
 
-        <div id="view-home" class="view-section">
-            <div class="glass p-8 rounded-[2.5rem] text-center mb-6">
-                <h3 class="font-black italic mb-4 uppercase">Daily Bonus</h3>
-                <button onclick="watchAd()" class="w-full bg-blue-600 py-4 rounded-2xl font-black italic">WATCH & EARN +1,000</button>
-            </div>
-        </div>
+<!-- MAIN APP -->
+<div id="app" class="hidden pb-28">
 
-        <div id="view-tasks" class="view-section hidden">
-            <div class="flex gap-2 mb-6 bg-zinc-900 p-1 rounded-2xl">
-                <button onclick="renderTasks('today')" id="btn-today" class="flex-1 py-3 text-[10px] font-black rounded-xl bg-blue-600">TODAY</button>
-                <button onclick="renderTasks('partner')" id="btn-partner" class="flex-1 py-3 text-[10px] font-black rounded-xl">PARTNERS</button>
-            </div>
-            <div id="task-list" class="space-y-3"></div>
-        </div>
+<!-- HEADER -->
+<div class="p-6 flex justify-between items-center border-b border-white/10">
+<div>
+<p id="uid" class="text-xs text-gray-500"></p>
+<p id="username" class="font-black italic"></p>
+</div>
+<div class="bg-blue-600/20 px-4 py-2 rounded-xl">
+<span id="balance" class="text-blue-500 font-black">0</span>
+</div>
+</div>
 
-        <div class="fixed bottom-0 left-0 w-full bg-black border-t border-white/10 flex justify-around p-4 pb-8 z-50">
-            <button onclick="showView('home')" id="nav-home" class="nav-active text-[10px] font-black uppercase">Home</button>
-            <button onclick="showView('tasks')" id="nav-tasks" class="text-gray-500 text-[10px] font-black uppercase">Tasks</button>
-        </div>
-    </div>
+<!-- ADS CARD -->
+<div class="p-6 space-y-6">
 
-    <script>
-        const API = "https://tagebot-production.up.railway.app";
-        let userData = null;
-        const taskData = [
-            { id: 1, title: "Join $TAGE TG", reward: 5000, type: "today", done: false },
-            { id: 2, title: "Follow $TAGE X", reward: 3000, type: "today", done: false },
-            { id: 3, title: "Partner Channel", reward: 2500, type: "partner", done: false }
-        ];
+<div class="glass p-6 rounded-3xl">
+<div class="flex justify-between mb-3">
+<div>
+<p class="text-xs uppercase text-gray-500">Daily Ads</p>
+<p class="font-black italic">Watch & Earn</p>
+</div>
+<div class="text-blue-500 font-black text-lg">
+<span id="ads-left">10</span>
+</div>
+</div>
+<p class="text-xs text-gray-500 mb-4">
+1,000 $TAGE per ad. Max 10 daily.
+</p>
+<button onclick="watchAd()" class="w-full bg-blue-600 py-3 rounded-xl font-black">
+WATCH AD
+</button>
+<p class="text-xs text-gray-500 mt-2">
+Watched: <span id="ads-watched">0</span>/10
+</p>
+</div>
 
-        function updateUI() {
-            if (!userData) return;
-            const username = userData.username || "Guest";
-            const uid = userData.telegram_id || "000000";
-            const points = userData.points || 0;
-            document.getElementById('user-name').innerText = "@" + username;
-            document.getElementById('uid-display').innerText = "UID: " + uid;
-            document.getElementById('balance').innerText = points.toLocaleString();
-        }
+<!-- TASKS -->
+<div class="glass p-6 rounded-3xl">
+<p class="text-xs uppercase text-gray-500 mb-2">Tasks</p>
+<div id="task-list" class="space-y-3"></div>
+</div>
 
-        function showView(name) {
-            document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
-            document.getElementById('view-' + name).classList.remove('hidden');
-            document.querySelectorAll('button[id^="nav-"]').forEach(n => n.classList.remove('nav-active'));
-            document.getElementById('nav-' + name).classList.add('nav-active');
-            if(name === 'tasks') renderTasks('today');
-        }
+<!-- LEADERBOARD -->
+<div class="glass p-6 rounded-3xl">
+<div class="flex justify-between mb-4">
+<p class="font-black italic">Leaderboard</p>
+<div class="flex gap-4 text-xs font-black">
+<span onclick="loadLeaderboard()" class="cursor-pointer text-blue-500">Today</span>
+</div>
+</div>
+<div id="leaderboard-list" class="space-y-2"></div>
+</div>
 
-        function renderTasks(type) {
-            document.getElementById('btn-today').classList.toggle('bg-blue-600', type === 'today');
-            document.getElementById('btn-partner').classList.toggle('bg-blue-600', type === 'partner');
-            
-            const list = document.getElementById('task-list');
-            const filtered = taskData.filter(t => t.type === type && !t.done);
-            list.innerHTML = filtered.map(t => `
-                <div class="glass p-4 rounded-2xl flex justify-between items-center">
-                    <div><p class="text-xs font-bold uppercase">${t.title}</p><p class="text-blue-500 font-black text-[10px]">+${t.reward}</p></div>
-                    <button onclick="completeTask(${t.id})" class="bg-blue-600 text-[9px] px-4 py-1 rounded-lg font-black">GO</button>
-                </div>
-            `).join('') || '<p class="text-xs text-gray-500">No tasks</p>';
-        }
+<!-- REFERRALS -->
+<div class="glass p-6 rounded-3xl text-center">
+<p class="font-black italic mb-2">Invite Friends</p>
+<p class="text-xs text-gray-500 mb-4">Earn 20% of friend earnings</p>
+<button onclick="invite()" class="w-full bg-blue-600 py-3 rounded-xl font-black">
+SHARE LINK
+</button>
+<div id="referral-list" class="mt-4 space-y-2"></div>
+</div>
 
-        async function initApp() {
-            const tg = window.Telegram.WebApp;
-            tg.ready();
-            tg.expand();
+</div>
+</div>
 
-            const res = await fetch(`${API}/auth`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    userId: tg.initDataUnsafe.user.id,
-                    username: tg.initDataUnsafe.user.username
-                })
-            });
+<script>
+const API="https://tagebot-production.up.railway.app";
+const tg=window.Telegram.WebApp;
+let user=null;
 
-            userData = await res.json();
-            updateUI();
+function animateScanner(){
+let bar=document.getElementById("scanbar");
+let width=0;
+let interval=setInterval(()=>{
+width++;
+bar.style.width=width+"%";
+if(width>=100){
+clearInterval(interval);
+initApp();
+}
+},20);
+}
 
-            let p = 0;
-            let int = setInterval(() => {
-                p++;
-                document.getElementById('progress-bar').style.width = p + "%";
-                if(p === 100) {
-                    clearInterval(int);
-                    document.getElementById('result').classList.remove('hidden');
-                }
-            }, 20);
-        }
+async function initApp(){
+tg.ready();tg.expand();
+const res=await fetch(`${API}/auth`,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+userId:tg.initDataUnsafe.user.id,
+username:tg.initDataUnsafe.user.username
+})
+});
+user=await res.json();
 
-        async function watchAd() {
-            const res = await fetch(`${API}/watch-ad`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    userId: userData.telegram_id
-                })
-            });
+document.getElementById("scanner").classList.add("hidden");
+document.getElementById("app").classList.remove("hidden");
 
-            userData = await res.json();
-            updateUI();
-        }
+updateUI();
+loadLeaderboard();
+loadReferrals();
+renderTasks();
+}
 
-        async function completeTask(taskId) {
-            const res = await fetch(`${API}/complete-task`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    userId: userData.telegram_id,
-                    taskId: taskId
-                })
-            });
+function updateUI(){
+document.getElementById("uid").innerText="UID: "+user.telegram_id;
+document.getElementById("username").innerText="@"+user.username;
+document.getElementById("balance").innerText=user.points.toLocaleString();
+document.getElementById("ads-watched").innerText=user.daily_ads_watched;
+document.getElementById("ads-left").innerText=10-user.daily_ads_watched;
+}
 
-            userData = await res.json();
-            const task = taskData.find((t) => t.id === taskId);
-            if (task) task.done = true;
-            updateUI();
-            renderTasks('today');
-        }
+async function watchAd(){
+if(user.daily_ads_watched>=10)return alert("Daily limit reached");
+const res=await fetch(`${API}/watch-ad`,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({userId:user.telegram_id})
+});
+user=await res.json();
+updateUI();
+}
 
-        function enterApp() {
-            document.getElementById('startup').classList.add('hidden');
-            document.getElementById('app').classList.remove('hidden');
-            updateUI();
-        }
+function renderTasks(){
+const tasks=[
+{id:1,title:"Follow on X",reward:5000},
+{id:2,title:"Join Telegram",reward:3000}
+];
+const container=document.getElementById("task-list");
+container.innerHTML="";
+tasks.forEach(t=>{
+container.innerHTML+=`
+<div class="flex justify-between items-center">
+<div>
+<p class="font-bold text-sm">${t.title}</p>
+<p class="text-blue-500 text-xs">+${t.reward}</p>
+</div>
+<button onclick="completeTask(${t.id})" class="bg-blue-600 px-4 py-1 rounded-xl text-xs font-black">
+CLAIM
+</button>
+</div>
+`;
+});
+}
 
-        initApp();
-    </script>
+async function completeTask(id){
+const res=await fetch(`${API}/complete-task`,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({userId:user.telegram_id,taskId:id})
+});
+user=await res.json();
+updateUI();
+}
+
+async function loadLeaderboard(){
+const res=await fetch(`${API}/leaderboard`);
+const data=await res.json();
+const lb=document.getElementById("leaderboard-list");
+lb.innerHTML=data.slice(0,10).map((u,i)=>`
+<div class="flex justify-between text-xs">
+<span>#${i+1} ${u.username}</span>
+<span class="text-blue-500">${u.points}</span>
+</div>
+`).join("");
+}
+
+async function loadReferrals(){
+const res=await fetch(`${API}/referrals/${user.telegram_id}`);
+const data=await res.json();
+const list=document.getElementById("referral-list");
+list.innerHTML=data.map(f=>`
+<div class="flex justify-between text-xs">
+<span>${f.username}</span>
+<span class="text-blue-500">${f.points}</span>
+</div>
+`).join("");
+}
+
+function invite(){
+const link=`https://t.me/YOUR_BOT_USERNAME?start=${user.telegram_id}`;
+tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}`);
+}
+
+animateScanner();
+</script>
 </body>
 </html>
