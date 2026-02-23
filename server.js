@@ -1,11 +1,34 @@
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
+const TelegramBot = require('node-telegram-bot-api');
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+const token = process.env.TELEGRAM_BOT_TOKEN;
+const webAppUrl = process.env.WEB_APP_URL || 'https://tage-bot-frontend.vercel.app';
+
+if (token) {
+    const bot = new TelegramBot(token, { polling: true });
+
+    // Respond when a user sends /start with a Web App launch button
+    bot.onText(/\/start/, (msg) => {
+        const chatId = msg.chat.id;
+        bot.sendMessage(chatId, 'Welcome to $TAGE! Click the button below to launch the app.', {
+            reply_markup: {
+                inline_keyboard: [[
+                    { text: 'Launch App', web_app: { url: webAppUrl } }
+                ]]
+            }
+        });
+    });
+
+    console.log('Telegram bot polling is active.');
+} else {
+    console.log('TELEGRAM_BOT_TOKEN not set. Bot polling disabled.');
+}
 
 // Logic to estimate account age based on ID sequence
 const getAge = (id) => {

@@ -74,24 +74,24 @@
             <button onclick="inviteFriends()" class="w-full bg-zinc-900 py-4 rounded-2xl font-black italic border border-white/10 active:scale-95 transition-all">SHARE INVITE LINK</button>
         </div>
 
-        <div class="glass p-4 rounded-[2rem] mt-6">
+        <div id="view-tasks" class="glass p-4 rounded-[2rem] mt-6">
             <div class="flex gap-2 mb-4 bg-black/40 p-1 rounded-xl">
-                <button onclick="switchTask('today')" class="task-tab flex-1 py-2 text-[10px] font-black italic rounded-lg bg-blue-600">TODAY</button>
-                <button onclick="switchTask('completed')" class="task-tab flex-1 py-2 text-[10px] font-black italic rounded-lg">COMPLETED</button>
-                <button onclick="switchTask('partner')" class="task-tab flex-1 py-2 text-[10px] font-black italic rounded-lg">PARTNERS</button>
+                <button onclick="switchTaskTab('today')" class="task-tab-btn flex-1 py-2 text-[10px] font-black rounded-xl bg-blue-600">TODAY</button>
+                <button onclick="switchTaskTab('partner')" class="task-tab-btn flex-1 py-2 text-[10px] font-black rounded-xl">PARTNERS</button>
+                <button onclick="switchTaskTab('completed')" class="task-tab-btn flex-1 py-2 text-[10px] font-black rounded-xl">COMPLETED</button>
             </div>
             <div id="task-list" class="space-y-3"></div>
         </div>
 
-        <div class="glass p-6 rounded-[2.5rem] mt-6">
+        <div id="view-leaderboard" class="glass p-6 rounded-[2.5rem] mt-6">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="font-black italic text-xl">RANKINGS</h3>
-                <div class="flex gap-2">
-                    <button onclick="renderLB('points')" id="lb-points" class="text-[8px] font-bold border border-white/10 px-3 py-1 rounded-full bg-blue-600">POINTS</button>
-                    <button onclick="renderLB('age')" id="lb-age" class="text-[8px] font-bold border border-white/10 px-3 py-1 rounded-full">OLD SCHOOL</button>
+                <div class="flex gap-2 bg-zinc-900 p-1 rounded-xl">
+                    <button onclick="renderLB('points')" id="btn-lb-pts" class="text-[8px] font-bold px-3 py-1 rounded-lg bg-blue-600">POINTS</button>
+                    <button onclick="renderLB('age')" id="btn-lb-age" class="text-[8px] font-bold px-3 py-1 rounded-lg">OLD SCHOOL</button>
                 </div>
             </div>
-            <div id="leaderboard-list" class="space-y-3"></div>
+            <div id="lb-list" class="space-y-3"></div>
         </div>
     </div>
 
@@ -111,11 +111,12 @@
             { id: 8500000000, date: new Date() }
         ];
 
-        const tasks = [
+        const allTasks = [
             { title: "Watch 10 videos", reward: 10000, type: "today" },
             { title: "Invite 1 friend", reward: 2500, type: "today" },
-            { title: "Age reward claimed", reward: 0, type: "completed" },
-            { title: "Follow Partner Channel", reward: 1500, type: "partner" }
+            { title: "Age reward claimed", reward: 0, type: "today", done: true },
+            { title: "Follow Partner Channel", reward: 1500, type: "partner" },
+            { title: "Retweet Partner Post", reward: 1200, type: "partner" }
         ];
 
         const lbData = [
@@ -198,32 +199,41 @@
             document.getElementById('startup').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
             updateUI();
-            switchTask('today');
+            switchTaskTab('today');
             renderLB('points');
         }
 
-        function switchTask(type) {
-            document.querySelectorAll('.task-tab').forEach((btn) => btn.classList.remove('bg-blue-600'));
-            const tabLabel = type === 'partner' ? 'partners' : type;
-            const selected = Array.from(document.querySelectorAll('.task-tab')).find((btn) => btn.textContent.trim().toLowerCase() === tabLabel);
-            if (selected) selected.classList.add('bg-blue-600');
-
+        function renderTaskElements(filtered) {
             const list = document.getElementById('task-list');
-            const filtered = tasks.filter((task) => task.type === type);
             list.innerHTML = filtered.map((task) => `
                 <div class="flex justify-between items-center bg-black/40 rounded-xl p-3 border border-white/5">
                     <div>
                         <p class="text-xs font-bold">${task.title}</p>
                         <p class="text-[10px] text-blue-400 font-bold">+${task.reward.toLocaleString()} $TAGE</p>
                     </div>
-                    <button class="text-[9px] px-3 py-1 rounded-full bg-zinc-900 border border-white/10">${type === 'completed' ? 'DONE' : 'GO'}</button>
+                    <button class="text-[9px] px-3 py-1 rounded-full bg-zinc-900 border border-white/10">${task.done ? 'DONE' : 'GO'}</button>
                 </div>
             `).join('') || '<p class="text-xs text-gray-500">No tasks here yet.</p>';
         }
 
+        function switchTaskTab(category) {
+            const buttons = document.querySelectorAll('.task-tab-btn');
+            buttons.forEach((btn) => btn.classList.remove('bg-blue-600'));
+            const label = category === 'partner' ? 'partners' : category;
+            const active = Array.from(buttons).find((btn) => btn.textContent.trim().toLowerCase() === label);
+            if (active) active.classList.add('bg-blue-600');
+
+            // Filter tasks based on the tab clicked
+            const filtered = allTasks.filter((t) => {
+                if (category === 'completed') return t.done === true;
+                return t.type === category && t.done !== true;
+            });
+            renderTaskElements(filtered);
+        }
+
         function renderLB(type = 'points') {
-            const pointsBtn = document.getElementById('lb-points');
-            const ageBtn = document.getElementById('lb-age');
+            const pointsBtn = document.getElementById('btn-lb-pts');
+            const ageBtn = document.getElementById('btn-lb-age');
             pointsBtn.classList.toggle('bg-blue-600', type === 'points');
             ageBtn.classList.toggle('bg-blue-600', type === 'age');
 
@@ -233,7 +243,7 @@
                 days: user.account_age_days || calculateDays(user.telegram_id || 1755569721)
             };
 
-            const lb = document.getElementById('leaderboard-list');
+            const lb = document.getElementById('lb-list');
 
             // Sort logic: 'points' for high balance, 'age' for oldest account
             let sortedData = [...lbData];
